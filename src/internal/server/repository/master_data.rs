@@ -1,5 +1,6 @@
+use std::sync::Arc;
 use async_trait::async_trait;
-use tokio_postgres::Client;
+use deadpool_postgres::Pool;
 use crate::internal::server::domain::entities::master_data::{
     MasterDataTaskStatus,
     MasterDataRole,
@@ -9,20 +10,21 @@ use crate::internal::server::domain::repositories::master_data::MasterDataReposi
 use crate::internal::pkg::exceptions::custom_error::MyError;
 
 pub struct MasterDataImpl {
-    db_conn: Client
+    pool: Arc<Pool>,
 }
 
 impl MasterDataImpl {
-    pub fn new(db_conn: Client) -> Self {
-        Self { db_conn }
+    pub fn new(pool: Arc<Pool>) -> Self {
+        Self { pool }
     }
 }
 
 #[async_trait]
 impl MasterDataRepositories for MasterDataImpl {
     async fn list_task_status(&self) -> Result<Vec<MasterDataTaskStatus>, MyError> {
+        let client = self.pool.get().await.map_err(|e| MyError::new(format!("Failed to get database connection: {}", e)))?;
 
-        let rows = self.db_conn
+        let rows = client
             .query(
                 "SELECT id, title, code, active, created_by, created_at, updated_at, updated_by FROM public.master_data_task_status;",
                 &[],
@@ -47,7 +49,8 @@ impl MasterDataRepositories for MasterDataImpl {
     }
 
     async fn list_role(&self) -> Result<Vec<MasterDataRole>, MyError> {
-        let rows = self.db_conn
+        let client = self.pool.get().await.map_err(|e| MyError::new(format!("Failed to get database connection: {}", e)))?;
+        let rows = client
             .query(
                 "SELECT id, title, code, active, created_by, created_at, updated_at, updated_by FROM public.master_data_role;",
                 &[],
@@ -72,7 +75,8 @@ impl MasterDataRepositories for MasterDataImpl {
     }
 
     async fn list_priority_levels(&self) -> Result<Vec<MasterDataPriorityLevels>, MyError> {
-        let rows = self.db_conn
+        let client = self.pool.get().await.map_err(|e| MyError::new(format!("Failed to get database connection: {}", e)))?;
+        let rows = client
             .query(
                 "SELECT id, seq, title, code, active, created_by, created_at, updated_at, updated_by FROM public.master_data_priority_levels;",
                 &[],

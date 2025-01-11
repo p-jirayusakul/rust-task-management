@@ -1,12 +1,16 @@
 use actix_web::{web, App, HttpServer};
+use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use tokio_postgres::NoTls;
 use std::env;
+use std::sync::Arc;
+use sonyflake::Sonyflake;
 
 mod internal;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
 
+    // local env
     if dotenv::from_filename(".env.local").is_err() {
         println!("Warning: .env.local not found. Using OS environment variables instead.");
     }
@@ -19,37 +23,25 @@ async fn main() -> std::io::Result<()> {
     let database_user = env::var("DB_USERNAME").expect("DB_USERNAME must be set in environment variables");
     let database_password = env::var("DB_PASSWORD").expect("DB_PASSWORD must be set in environment variables");
 
-    let (client, connection) = match tokio_postgres::connect(
-        &format!(
-            "host={} port={} dbname={} user={} password={}",
-            database_host,
-            database_port,
-            database_name,
-            database_user,
-            database_password,
-        ),
-        NoTls,
-    )
-        .await
-    {
-        Ok(conn) => conn,
-        Err(err) => {
-            eprintln!("Failed to connect to the database: {}", err);
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Database connection error",
-            ));
-        }
-    };
+    // connection database
+    let mut cfg = tokio_postgres::Config::new();
+    cfg.dbname(database_name.as_str());
+    cfg.user(database_user.as_str());
+    cfg.password(database_password.as_str());
+    cfg.host(database_host.as_str());
+    cfg.port(database_port.parse::<u16>().expect("Invalid port"));
 
-    tokio::spawn(async move {
-        if let Err(e) = connection.await {
-            eprintln!("connection error: {}", e);
-        }
-    });
+    let mgr_config = ManagerConfig {
+        recycling_method: RecyclingMethod::Fast,
+    };
+    let mgr = Manager::from_config(cfg, NoTls, mgr_config);
+    let pool = Pool::builder(mgr).max_size(16).build().unwrap();
+    let pool = Arc::new(pool);
+
+
 
     // สร้าง repository instance
-    let master_data_repository = internal::server::repository::master_data::MasterDataImpl::new(client);
+    let master_data_repository = internal::server::repository::master_data::MasterDataImpl::new(Arc::clone(&pool));
 
     // สร้าง instance ของ UseCase สำหรับ MasterData
     let master_data_use_case = internal::server::use_case::master_data::MasterDataUseCaseImpl::new(master_data_repository);
@@ -61,6 +53,15 @@ async fn main() -> std::io::Result<()> {
 
     // ใช้ web::Data เพื่อทำให้ง่ายในการ clone
     let master_data_handler_data = web::Data::new(master_data_handler);
+
+    let sf = match Sonyflake::new() {
+        Ok(sf) => sf, // หากได้ค่า Result::Ok(Sonyflake)
+        Err(e) => return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to initialize Sonyflake: {}", e))), // หากมีข้อผิดพลาด
+    };
+
+    let snowflake_node = internal::pkg::utils::snowflake::SnowflakeImpl::new(sf);
+
+    let task_repository = internal::server::repository::task::TaskImpl::new(Arc::clone(&pool), snowflake_node);
 
     // สร้าง HttpServer พร้อมระบุ routes
     HttpServer::new(move || {
