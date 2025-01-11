@@ -8,19 +8,18 @@ use crate::internal::server::domain::repositories::master_data::MasterDataReposi
 use crate::internal::server::domain::use_case::master_data::MasterDataUseCase;
 use crate::internal::pkg::exceptions::custom_error::MyError;
 
-#[derive(Clone)] // ทำให้สามารถ Clone ได้
-pub struct MasterDataUseCaseImpl<T: MasterDataRepositories + Clone> {
+pub struct MasterDataUseCaseImpl<T: MasterDataRepositories> {
     repository: T,
 }
 
-impl<T: MasterDataRepositories + Clone> MasterDataUseCaseImpl<T> {
+impl<T: MasterDataRepositories> MasterDataUseCaseImpl<T> {
     pub fn new(repository: T) -> Self {
         Self { repository }
     }
 }
 
 #[async_trait]
-impl<T: MasterDataRepositories + Clone> MasterDataUseCase for MasterDataUseCaseImpl<T> {
+impl<T: MasterDataRepositories> MasterDataUseCase for MasterDataUseCaseImpl<T> {
     async fn list_task_status(&self) -> Result<Vec<MasterDataTaskStatus>, MyError> {
         self.repository.list_task_status().await
     }

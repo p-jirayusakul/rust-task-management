@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use tokio_postgres::Client;
-use std::sync::Arc;
 use crate::internal::server::domain::entities::master_data::{
     MasterDataTaskStatus,
     MasterDataRole,
@@ -9,13 +8,12 @@ use crate::internal::server::domain::entities::master_data::{
 use crate::internal::server::domain::repositories::master_data::MasterDataRepositories;
 use crate::internal::pkg::exceptions::custom_error::MyError;
 
-#[derive(Clone)]
 pub struct MasterDataImpl {
-    db_conn: Arc<Client>
+    db_conn: Client
 }
 
 impl MasterDataImpl {
-    pub fn new(db_conn: Arc<Client>) -> Self {
+    pub fn new(db_conn: Client) -> Self {
         Self { db_conn }
     }
 }

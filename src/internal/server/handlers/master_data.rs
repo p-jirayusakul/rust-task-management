@@ -5,7 +5,6 @@ use crate::internal::pkg::middleware::response::{
 };
 use actix_web::{ web, HttpResponse, Responder};
 
-#[derive(Clone)]
 pub struct MasterDataHandler<T: MasterDataUseCase + Send + Sync> {
     use_case: T,
 }
