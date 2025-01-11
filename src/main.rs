@@ -1,9 +1,9 @@
 use actix_web::{web, App, HttpServer};
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
-use tokio_postgres::NoTls;
+use sonyflake::Sonyflake;
 use std::env;
 use std::sync::Arc;
-use sonyflake::Sonyflake;
+use tokio_postgres::NoTls;
 
 mod internal;
 
@@ -37,8 +37,7 @@ async fn main() -> std::io::Result<()> {
     let mgr = Manager::from_config(cfg, NoTls, mgr_config);
     let pool = Pool::builder(mgr).max_size(16).build().unwrap();
     let pool = Arc::new(pool);
-
-
+    
 
     // สร้าง repository instance
     let master_data_repository = internal::server::repository::master_data::MasterDataImpl::new(Arc::clone(&pool));
@@ -63,21 +62,46 @@ async fn main() -> std::io::Result<()> {
 
     let task_repository = internal::server::repository::task::TaskImpl::new(Arc::clone(&pool), snowflake_node);
 
+    let task_use_case = internal::server::use_case::task::TaskUseCaseImpl::new(task_repository);
+
+    let task_handler = internal::server::handlers::task::TaskHandler::new(
+        task_use_case,
+    );
+
+    let task_handler_data = web::Data::new(task_handler);
+
+
     // สร้าง HttpServer พร้อมระบุ routes
     HttpServer::new(move || {
         App::new()
-            .app_data(master_data_handler_data.clone()) // Clone web::Data object
             .service(
                 web::scope("/api/v1")
+
                     // Master Data
-                    .configure(internal::server::handlers::master_data::configure_routes::<
-                        internal::server::use_case::master_data::MasterDataUseCaseImpl<
-                            internal::server::repository::master_data::MasterDataImpl,
-                        >,
-                    >),
+                    .app_data(master_data_handler_data.clone())
+                    .configure(|cfg| {
+                            internal::server::handlers::master_data::configure_routes::<
+                                internal::server::use_case::master_data::MasterDataUseCaseImpl<
+                                    internal::server::repository::master_data::MasterDataImpl,
+                                >,
+                            >(cfg)
+                        })
+
+                    // Task management
+                    .app_data(task_handler_data.clone()) // Clone web::Data object
+                    .configure(|cfg| {
+                        internal::server::handlers::task::configure_routes::<
+                            internal::server::use_case::task::TaskUseCaseImpl<
+                                internal::server::repository::task::TaskImpl<
+                                    internal::pkg::utils::snowflake::SnowflakeImpl,
+                                >,
+                            >,
+                        >(cfg)
+                    })
             )
+
     })
-        .bind(("127.0.0.1", port))? // ระบุ Host และ Port
+        .bind(("127.0.0.1", port))? // Specify Host and Port
         .run()
         .await
 }
