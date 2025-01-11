@@ -23,6 +23,24 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
             Err(e) => HttpResponse::InternalServerError().json(response_error(&e.message)),
         }
     }
+
+    pub async fn list_role(
+        handler: web::Data<MasterDataHandler<T>>,
+    ) -> impl Responder {
+        match handler.use_case.list_role().await {
+            Ok(task_statuses) => HttpResponse::Ok().json(response_success("get list role completed", task_statuses)),
+            Err(e) => HttpResponse::InternalServerError().json(response_error(&e.message)),
+        }
+    }
+
+    pub async fn list_priority_levels(
+        handler: web::Data<MasterDataHandler<T>>,
+    ) -> impl Responder {
+        match handler.use_case.list_priority_levels().await {
+            Ok(task_statuses) => HttpResponse::Ok().json(response_success("get list priority levels completed", task_statuses)),
+            Err(e) => HttpResponse::InternalServerError().json(response_error(&e.message)),
+        }
+    }
 }
 
 // Static route registration
@@ -32,5 +50,7 @@ pub fn configure_routes<T: MasterDataUseCase + Send + Sync + 'static>(
     cfg.service(
         web::scope("/master-data")
             .route("/task-status", web::get().to(MasterDataHandler::<T>::list_task_status))
+            .route("/role", web::get().to(MasterDataHandler::<T>::list_role))
+            .route("/priority-levels", web::get().to(MasterDataHandler::<T>::list_priority_levels))
     );
 }

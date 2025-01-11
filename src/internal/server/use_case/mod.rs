@@ -1,1 +1,1 @@
-pub(crate) mod master_data;
+pub mod master_data;
