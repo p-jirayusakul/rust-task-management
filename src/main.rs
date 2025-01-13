@@ -34,8 +34,12 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new().service(
             web::scope("/api/v1")
+
+                // Master Data
                 .app_data(master_data_handler_data.clone())
                 .configure(|cfg| configure_master_data_routes::<MasterDataUseCaseImpl<MasterDataImpl>>(cfg))
+
+                // Task Management
                 .app_data(task_handler_data.clone())
                 .configure(|cfg| configure_task_routes::<TaskUseCaseImpl<TaskImpl<SnowflakeImpl>>>(cfg)),
         )

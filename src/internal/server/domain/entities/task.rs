@@ -38,3 +38,15 @@ pub struct UpdateTask {
     pub priority_levels_id: i64,
     pub updated_by: i64,
 }
+
+pub struct UpdateTaskStatus {
+    pub id: i64,
+    pub task_status_id: i64,
+    pub updated_by: i64,
+}
+
+pub struct UpdateTaskPriorityLevels {
+    pub id: i64,
+    pub priority_levels_id: i64,
+    pub updated_by: i64,
+}

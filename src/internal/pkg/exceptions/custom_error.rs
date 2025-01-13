@@ -3,6 +3,7 @@ use std::fmt;
 use std::error::Error;
 
 /// Enum representing various error statuses.
+#[allow(dead_code)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Status {
     DomainError,
