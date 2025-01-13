@@ -19,7 +19,7 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
     ) -> impl Responder {
         match handler.use_case.list_task_status().await {
             Ok(task_statuses) => HttpResponse::Ok().json(response_success("get list task status completed", task_statuses)),
-            Err(e) => HttpResponse::InternalServerError().json(response_error(&e.message)),
+            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message))
         }
     }
 
@@ -28,7 +28,7 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
     ) -> impl Responder {
         match handler.use_case.list_role().await {
             Ok(task_statuses) => HttpResponse::Ok().json(response_success("get list role completed", task_statuses)),
-            Err(e) => HttpResponse::InternalServerError().json(response_error(&e.message)),
+            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message))
         }
     }
 
@@ -37,7 +37,7 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
     ) -> impl Responder {
         match handler.use_case.list_priority_levels().await {
             Ok(task_statuses) => HttpResponse::Ok().json(response_success("get list priority levels completed", task_statuses)),
-            Err(e) => HttpResponse::InternalServerError().json(response_error(&e.message)),
+            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message))
         }
     }
 }

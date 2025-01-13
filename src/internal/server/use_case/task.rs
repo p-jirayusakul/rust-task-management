@@ -1,4 +1,4 @@
-use crate::internal::pkg::exceptions::custom_error::MyError;
+use crate::internal::pkg::exceptions::custom_error::{MyError, Status};
 use crate::internal::server::domain::entities::task::{CreateTask, Task, TaskID, UpdateTask};
 use crate::internal::server::domain::repositories::task::TaskRepositories;
 use crate::internal::server::domain::use_case::task::TaskUseCase;
@@ -25,13 +25,12 @@ impl<T: TaskRepositories> TaskUseCase for TaskUseCaseImpl<T> {
     }
 
     async fn create_task(&self, task: CreateTask) -> Result<TaskID, MyError> {
-
         if !self.repository.is_task_status_already_exist(task.task_status_id).await? {
-            return Err(MyError { message: "Task status not found".to_string() });
+            return Err(MyError::new(Status::NotFound, format!("Task ID {} not found", task.task_status_id)));
         }
 
         if !self.repository.is_priority_levels_already_exist(task.priority_levels_id).await? {
-            return Err(MyError { message: "Priority levels not found".to_string() });
+            return Err(MyError::new(Status::NotFound, format!("Priority levels ID {} not found", task.priority_levels_id)));
         }
         
         self.repository.create_task(task).await.map(|id| TaskID { id })

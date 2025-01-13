@@ -2,9 +2,7 @@ use crate::internal::pkg::middleware::response::{
     response_error,
     response_success,
 };
-use crate::internal::server::domain::entities::task::{
-    CreateTask as CreateTaskEntity,
-};
+use crate::internal::server::domain::entities::task::CreateTask as CreateTaskEntity;
 use crate::internal::server::domain::use_case::task::TaskUseCase;
 use crate::internal::server::request::task::CreateTask;
 use actix_web::{web, HttpResponse, Responder};
@@ -24,7 +22,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
     ) -> impl Responder {
         match handler.use_case.list_task().await {
             Ok(tasks) => HttpResponse::Ok().json(response_success("get list task completed", tasks)),
-            Err(e) => HttpResponse::InternalServerError().json(response_error(&e.message)),
+            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message)),
         }
     }
 
@@ -48,7 +46,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
 
         match handler.use_case.create_task(task).await {
             Ok(task_id) => HttpResponse::Created().json(response_success("Task created successfully", task_id)),
-            Err(e) => HttpResponse::InternalServerError().json(response_error(&e.message)),
+            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message))
         }
     }
 }
