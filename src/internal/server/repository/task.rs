@@ -133,6 +133,19 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
         Ok(())
     }
 
+    async fn is_task_already_exist(&self, id: i64) -> Result<bool, MyError> {
+        let client = self.pool.get().await.map_err(|e| MyError::new(format!("Failed to get database connection: {}", e)))?;
+
+        let row = client
+            .query_one(
+                "SELECT (COUNT(id) > 0) as is_already_exists FROM public.task WHERE id = $1;",
+                &[&id],
+            )
+            .await.map_err(|e| MyError::new(format!("Database query failed: {}", e)))?;
+
+        Ok(row.get("is_already_exists"))
+    }
+
     async fn is_task_status_already_exist(&self, id: i64) -> Result<bool, MyError> {
         let client = self.pool.get().await.map_err(|e| MyError::new(format!("Failed to get database connection: {}", e)))?;
 

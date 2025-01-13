@@ -60,8 +60,6 @@ pub fn configure_routes<T: TaskUseCase + Send + Sync + 'static>(
     cfg.service(
         web::scope("/task")
             .route("", web::get().to(TaskHandler::<T>::list_task))
-            .route("/", web::get().to(TaskHandler::<T>::list_task))
             .route("", web::post().to(TaskHandler::<T>::create_task))
-            .route("/", web::post().to(TaskHandler::<T>::create_task))
     );
 }
