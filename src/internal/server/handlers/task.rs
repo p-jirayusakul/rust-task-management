@@ -1,9 +1,10 @@
-use crate::internal::pkg::middleware::response::{response_error, response_success};
-use crate::internal::server::domain::entities::task::{CreateTask as CreateTaskEntity, UpdateTask as UpdateTaskEntity, UpdateTaskStatus as UpdateTaskStatusEntity, UpdateTaskPriorityLevels as UpdateTaskPriorityLevelsEntity};
+use crate::internal::pkg::middleware::response::{response_success};
+use crate::internal::server::domain::entities::task::{CreateTask as CreateTaskEntity, UpdateTask as UpdateTaskEntity, UpdateTaskPriorityLevels as UpdateTaskPriorityLevelsEntity, UpdateTaskStatus as UpdateTaskStatusEntity};
 use crate::internal::server::domain::use_case::task::TaskUseCase;
 use crate::internal::server::request::task::{TaskRequest, UpdateTaskPriorityLevelsRequest, UpdateTaskStatusRequest};
 use actix_web::{web, HttpResponse, Responder};
 use validator::Validate;
+use crate::internal::pkg::exceptions::custom_error::MyError;
 
 pub struct TaskHandler<T: TaskUseCase + Send + Sync> {
     use_case: T,
@@ -14,29 +15,27 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         Self { use_case }
     }
 
-    pub async fn list_task(handler: web::Data<TaskHandler<T>>) -> impl Responder {
+    pub async fn list_task(handler: web::Data<TaskHandler<T>>) -> Result<impl Responder, MyError> {
         match handler.use_case.list_task().await {
-            Ok(tasks) => HttpResponse::Ok().json(response_success("get list task completed", tasks)),
-            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message)),
+            Ok(tasks) => Ok(HttpResponse::Ok().json(response_success("get task completed", tasks))),
+            Err(e) => Err(e),
         }
     }
 
-    pub async fn get_task(handler: web::Data<TaskHandler<T>>, path: web::Path<i64>) -> impl Responder {
+    pub async fn get_task(handler: web::Data<TaskHandler<T>>, path: web::Path<i64>) -> Result<impl Responder, MyError> {
         let task_id = path.into_inner();
         match handler.use_case.get_task(task_id).await {
-            Ok(task) => HttpResponse::Ok().json(response_success("get task completed", task)),
-            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message)),
+            Ok(task) => Ok(HttpResponse::Ok().json(response_success("get task completed", task))),
+            Err(e) => Err(e),
         }
     }
 
     pub async fn create_task(
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<TaskRequest>,
-    ) -> impl Responder {
-
-        if let Err(e) = body.validate() {
-            return HttpResponse::BadRequest().json(response_error(&e.to_string()));
-        }
+    ) ->  Result<impl Responder, MyError> {
+        
+        body.validate().map_err(|e| MyError::ValidationError(e.to_string()))?;
 
         let new_task_entity = CreateTaskEntity {
             title: body.title.clone(),
@@ -47,8 +46,8 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         };
 
         match handler.use_case.create_task(new_task_entity).await {
-            Ok(task_id) => HttpResponse::Created().json(response_success("Task created successfully", task_id)),
-            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message)),
+            Ok(task_id) => Ok(HttpResponse::Created().json(response_success("Task created successfully", task_id))),
+            Err(e) => Err(e),
         }
     }
 
@@ -56,12 +55,10 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<TaskRequest>,
         path: web::Path<i64>
-    ) -> impl Responder {
+    ) -> Result<impl Responder, MyError> {
         let task_id = path.into_inner();
 
-        if let Err(e) = body.validate() {
-            return HttpResponse::BadRequest().json(response_error(&e.to_string()));
-        }
+        body.validate().map_err(|e| MyError::ValidationError(e.to_string()))?;
 
         let update_task_entity = UpdateTaskEntity {
             id: task_id,
@@ -73,8 +70,8 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         };
 
         match handler.use_case.update_task(update_task_entity).await {
-            Ok(..) => HttpResponse::Ok().json(response_success("Task updated successfully", ())),
-            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message)),
+            Ok(..) => Ok(HttpResponse::Ok().json(response_success("Task updated successfully", ()))),
+            Err(e) => Err(e),
         }
     }
 
@@ -82,12 +79,10 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<UpdateTaskStatusRequest>,
         path: web::Path<i64>
-    ) -> impl Responder {
+    ) -> Result<impl Responder, MyError> {
         let task_id = path.into_inner();
 
-        if let Err(e) = body.validate() {
-            return HttpResponse::BadRequest().json(response_error(&e.to_string()));
-        }
+        body.validate().map_err(|e| MyError::ValidationError(e.to_string()))?;
 
         let update_task_entity = UpdateTaskStatusEntity {
             id: task_id,
@@ -96,8 +91,8 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         };
 
         match handler.use_case.update_task_status(update_task_entity).await {
-            Ok(..) => HttpResponse::Ok().json(response_success("Task status updated successfully", ())),
-            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message)),
+            Ok(..) => Ok(HttpResponse::Ok().json(response_success("Task status updated successfully", ()))),
+            Err(e) => Err(e),
         }
     }
 
@@ -105,12 +100,10 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<UpdateTaskPriorityLevelsRequest>,
         path: web::Path<i64>
-    ) -> impl Responder {
+    ) -> Result<impl Responder, MyError> {
         let task_id = path.into_inner();
 
-        if let Err(e) = body.validate() {
-            return HttpResponse::BadRequest().json(response_error(&e.to_string()));
-        }
+        body.validate().map_err(|e| MyError::ValidationError(e.to_string()))?;
 
         let update_task_entity = UpdateTaskPriorityLevelsEntity {
             id: task_id,
@@ -119,16 +112,16 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         };
 
         match handler.use_case.update_task_priority_levels(update_task_entity).await {
-            Ok(..) => HttpResponse::Ok().json(response_success("Task priority levels updated successfully", ())),
-            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message)),
+            Ok(..) => Ok(HttpResponse::Ok().json(response_success("Task priority levels updated successfully", ()))),
+            Err(e) => Err(e),
         }
     }
 
-    pub async fn delete_task(handler: web::Data<TaskHandler<T>>, path: web::Path<i64>) -> impl Responder {
+    pub async fn delete_task(handler: web::Data<TaskHandler<T>>, path: web::Path<i64>) -> Result<impl Responder, MyError> {
         let task_id = path.into_inner();
         match handler.use_case.delete_task(task_id).await {
-            Ok(..) => HttpResponse::Ok().json(response_success("Task deleted successfully", ())),
-            Err(e) => HttpResponse::build(e.http_status_code()).json(response_error(&e.message)),
+            Ok(..) => Ok(HttpResponse::Ok().json(response_success("Task deleted successfully", ()))),
+            Err(e) => Err(e),
         }
     }
 }

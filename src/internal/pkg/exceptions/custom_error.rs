@@ -1,70 +1,83 @@
+use crate::internal::pkg::middleware::response::response_error;
+use actix_web::http::header::ContentType;
 use actix_web::http::StatusCode;
-use std::fmt;
-use std::error::Error;
-
-/// Enum representing various error statuses.
+use actix_web::{error, HttpResponse};
+use std::fmt::{Display, Formatter};
 #[allow(dead_code)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Status {
-    DomainError,
-    BusinessError,
-    SystemError,
-    NotFound,
-    RepositoryError,
-    UnknownError,
-    Unauthorized,
-    Forbidden,
-    DataConflict,
-}
-
-/// Struct for custom errors with a status and a detailed message.
 #[derive(Debug)]
-pub struct MyError {
-    pub status: Status,
-    pub message: String,
+pub enum MyError {
+    ValidationError(String),
+    InternalError(String),
+    DomainError(String),
+    BusinessError(String),
+    SystemError(String),
+    NotFound(String),
+    RepositoryError(String),
+    UnknownError(String),
+    Unauthorized(String),
+    Forbidden(String),
+    DataConflict(String),
 }
 
-impl MyError {
-    pub fn new(status: Status, message: impl Into<String>) -> Self {
-        MyError {
-            status,
-            message: message.into(),
+impl Display for MyError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MyError::ValidationError(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::InternalError(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::DomainError(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::BusinessError(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::SystemError(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::NotFound(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::RepositoryError(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::UnknownError(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::Unauthorized(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::Forbidden(message) => {
+                write!(f, "{}", message)
+            }
+            MyError::DataConflict(message) => {
+                write!(f, "{}", message)
+            }
         }
     }
+}
 
-    pub fn http_status_code(&self) -> StatusCode {
-        match self.status {
-            Status::DomainError | Status::BusinessError => StatusCode::BAD_REQUEST, // 400
-            Status::SystemError | Status::UnknownError | Status::RepositoryError => StatusCode::INTERNAL_SERVER_ERROR, // 500
-            Status::NotFound => StatusCode::NOT_FOUND, // 404
-            Status::Unauthorized => StatusCode::UNAUTHORIZED, // 401
-            Status::Forbidden => StatusCode::FORBIDDEN, // 403
-            Status::DataConflict => StatusCode::CONFLICT, // 409
+impl error::ResponseError for MyError {
+    fn status_code(&self) -> StatusCode {
+        match *self {
+            MyError::ValidationError { .. } => StatusCode::BAD_REQUEST,
+            MyError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            MyError::DomainError { .. } => StatusCode::BAD_REQUEST,
+            MyError::BusinessError { .. } => StatusCode::BAD_REQUEST,
+            MyError::SystemError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            MyError::NotFound { .. } => StatusCode::NOT_FOUND,
+            MyError::RepositoryError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            MyError::UnknownError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            MyError::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
+            MyError::Forbidden { .. } => StatusCode::FORBIDDEN,
+            MyError::DataConflict { .. } => StatusCode::CONFLICT,
         }
     }
-}
-
-impl fmt::Display for MyError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: {}", self.status, self.message)
-    }
-}
-
-impl Error for MyError {}
-
-impl fmt::Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let status_str = match self {
-            Status::DomainError => "Domain Error",
-            Status::BusinessError => "Business Error",
-            Status::SystemError => "System Error",
-            Status::NotFound => "Not Found",
-            Status::RepositoryError => "Repository Error",
-            Status::UnknownError => "Unknown Error",
-            Status::Unauthorized => "Unauthorized",
-            Status::Forbidden => "Forbidden",
-            Status::DataConflict => "Data Conflict",
-        };
-        write!(f, "{}", status_str)
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code())
+            .insert_header(ContentType::json())
+            .json(response_error(&self.to_string()))
     }
 }

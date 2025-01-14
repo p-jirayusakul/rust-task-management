@@ -1,23 +1,17 @@
 use actix_web::{
-    body::BoxBody,
-    dev::ServiceResponse,
-    http::{header, StatusCode},
-    middleware::{
-        ErrorHandlerResponse,
-        ErrorHandlers,
-        Logger,
-    }, web, App, HttpServer,
-    Result
+    middleware::{ErrorHandlers, Logger},
+    web, App, HttpServer, Result,
 };
+
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use env_logger::Env;
 use sonyflake::Sonyflake;
 use std::sync::Arc;
 use tokio_postgres::NoTls;
-mod internal;
 
+mod internal;
 use internal::{
-    pkg::utils::snowflake::SnowflakeImpl,
+    pkg::{middleware::error::add_error_header, utils::snowflake::SnowflakeImpl},
     server::{
         config::server::{load_env, parse_port_from_env, DatabaseConfig},
         handlers::{
@@ -31,33 +25,6 @@ use internal::{
 
 const ENV_FILE: &str = ".env.local";
 
-
-fn add_error_header<B>(mut res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
-    res.response_mut().headers_mut().insert(
-        header::CONTENT_TYPE,
-        header::HeaderValue::from_static("application/json; charset=utf-8"),
-    );
-
-    // body is unchanged, map to "left" slot
-    Ok(ErrorHandlerResponse::Response(res.map_into_left_body()))
-}
-
-fn handle_bad_request<B>(mut res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
-    res.response_mut().headers_mut().insert(
-        header::CONTENT_TYPE,
-        header::HeaderValue::from_static("application/json; charset=utf-8"),
-    );
-
-    let error_msg: String = match res.response().error() {
-        Some(e) => format!("{}", e.to_string()),
-        None =>  String::from("Unknown Error")
-    };
-
-    println!("{}", error_msg);
-
-    Ok(ErrorHandlerResponse::Response(res.map_into_left_body()))
-}
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     load_env(ENV_FILE);
@@ -70,34 +37,32 @@ async fn main() -> std::io::Result<()> {
     let master_data_handler_data = create_master_data_handler_data(Arc::clone(&pool));
     let task_handler_data = create_task_handler_data(Arc::clone(&pool), snowflake_node);
 
-    use actix_web::{App, HttpServer};
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .wrap(
-                ErrorHandlers::new()
-                    .default_handler(add_error_header)
-                    .handler(StatusCode::BAD_REQUEST, handle_bad_request)
-            )
+            .wrap(ErrorHandlers::new().default_handler(add_error_header))
             .service(
-            web::scope("/api/v1")
+                web::scope("/api/v1")
 
-                // Master Data
-                .app_data(master_data_handler_data.clone())
-                .configure(|cfg| configure_master_data_routes::<MasterDataUseCaseImpl<MasterDataImpl>>(cfg))
+                    // Master Data
+                    .app_data(master_data_handler_data.clone())
+                    .configure(|cfg| {
+                        configure_master_data_routes::<MasterDataUseCaseImpl<MasterDataImpl>>(cfg)
+                    })
 
-                // Task Management
-                .app_data(task_handler_data.clone())
-                .configure(|cfg| configure_task_routes::<TaskUseCaseImpl<TaskImpl<SnowflakeImpl>>>(cfg)),
-        )
+                    // Task Management
+                    .app_data(task_handler_data.clone())
+                    .configure(|cfg| {
+                        configure_task_routes::<TaskUseCaseImpl<TaskImpl<SnowflakeImpl>>>(cfg)
+                    }),
+            )
     })
-        .bind(("127.0.0.1", port))?
-        .run()
-        .await
+    .bind(("127.0.0.1", port))?
+    .run()
+    .await
 }
-
 
 fn create_db_pool(config: &DatabaseConfig) -> Result<Arc<Pool>, std::io::Error> {
     let mut db_cfg = tokio_postgres::Config::new();
@@ -124,12 +89,17 @@ fn create_db_pool(config: &DatabaseConfig) -> Result<Arc<Pool>, std::io::Error> 
 
 fn initialize_sonyflake() -> Result<Sonyflake, std::io::Error> {
     let sonyflake = Sonyflake::new().map_err(|e| {
-        std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to initialize Sonyflake: {}", e))
+        std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to initialize Sonyflake: {}", e),
+        )
     })?;
     Ok(sonyflake)
 }
 
-fn create_master_data_handler_data(pool: Arc<Pool>) -> web::Data<MasterDataHandler<MasterDataUseCaseImpl<MasterDataImpl>>> {
+fn create_master_data_handler_data(
+    pool: Arc<Pool>,
+) -> web::Data<MasterDataHandler<MasterDataUseCaseImpl<MasterDataImpl>>> {
     let master_data_repository = MasterDataImpl::new(pool);
     let master_data_use_case = MasterDataUseCaseImpl::new(master_data_repository);
     let master_data_handler = MasterDataHandler::new(master_data_use_case);
