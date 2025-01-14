@@ -1,23 +1,62 @@
-use actix_web::{web, App, HttpServer};
+use actix_web::{
+    body::BoxBody,
+    dev::ServiceResponse,
+    http::{header, StatusCode},
+    middleware::{
+        ErrorHandlerResponse,
+        ErrorHandlers,
+        Logger,
+    }, web, App, HttpServer,
+    Result
+};
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
+use env_logger::Env;
 use sonyflake::Sonyflake;
 use std::sync::Arc;
 use tokio_postgres::NoTls;
 mod internal;
+
 use internal::{
     pkg::utils::snowflake::SnowflakeImpl,
     server::{
+        config::server::{load_env, parse_port_from_env, DatabaseConfig},
         handlers::{
             master_data::{configure_routes as configure_master_data_routes, MasterDataHandler},
             task::{configure_routes as configure_task_routes, TaskHandler},
         },
         repository::{master_data::MasterDataImpl, task::TaskImpl},
         use_case::{master_data::MasterDataUseCaseImpl, task::TaskUseCaseImpl},
-        config::server::{DatabaseConfig, load_env, parse_port_from_env},
     },
 };
 
 const ENV_FILE: &str = ".env.local";
+
+
+fn add_error_header<B>(mut res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
+    res.response_mut().headers_mut().insert(
+        header::CONTENT_TYPE,
+        header::HeaderValue::from_static("application/json; charset=utf-8"),
+    );
+
+    // body is unchanged, map to "left" slot
+    Ok(ErrorHandlerResponse::Response(res.map_into_left_body()))
+}
+
+fn handle_bad_request<B>(mut res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
+    res.response_mut().headers_mut().insert(
+        header::CONTENT_TYPE,
+        header::HeaderValue::from_static("application/json; charset=utf-8"),
+    );
+
+    let error_msg: String = match res.response().error() {
+        Some(e) => format!("{}", e.to_string()),
+        None =>  String::from("Unknown Error")
+    };
+
+    println!("{}", error_msg);
+
+    Ok(ErrorHandlerResponse::Response(res.map_into_left_body()))
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -31,8 +70,18 @@ async fn main() -> std::io::Result<()> {
     let master_data_handler_data = create_master_data_handler_data(Arc::clone(&pool));
     let task_handler_data = create_task_handler_data(Arc::clone(&pool), snowflake_node);
 
+    use actix_web::{App, HttpServer};
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
+
     HttpServer::new(move || {
-        App::new().service(
+        App::new()
+            .wrap(Logger::default())
+            .wrap(
+                ErrorHandlers::new()
+                    .default_handler(add_error_header)
+                    .handler(StatusCode::BAD_REQUEST, handle_bad_request)
+            )
+            .service(
             web::scope("/api/v1")
 
                 // Master Data
