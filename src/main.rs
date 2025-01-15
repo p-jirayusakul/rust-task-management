@@ -41,8 +41,11 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            // จัดการ logger
             .wrap(Logger::default())
+            // จัดการ error response ทั้งหมดใน API
             .wrap(ErrorHandlers::new().default_handler(add_error_header))
+            // รวม service
             .service(
                 web::scope("/api/v1")
 

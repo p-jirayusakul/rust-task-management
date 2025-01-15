@@ -1672,7 +1672,6 @@ dependencies = [
  "async-trait",
  "chrono",
  "deadpool-postgres",
- "derive_more",
  "dotenv",
  "env_logger",
  "log",

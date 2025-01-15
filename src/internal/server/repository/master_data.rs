@@ -1,4 +1,4 @@
-use crate::internal::pkg::exceptions::custom_error::{MyError};
+use crate::internal::pkg::exceptions::custom_error::{CustomError};
 use crate::internal::server::domain::entities::master_data::{
     MasterDataPriorityLevels,
     MasterDataRole,
@@ -21,8 +21,8 @@ impl MasterDataImpl {
 
 #[async_trait]
 impl MasterDataRepositories for MasterDataImpl {
-    async fn list_task_status(&self) -> Result<Vec<MasterDataTaskStatus>, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn list_task_status(&self) -> Result<Vec<MasterDataTaskStatus>, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let rows = client
             .query(
@@ -30,7 +30,7 @@ impl MasterDataRepositories for MasterDataImpl {
                 &[],
             )
             .await
-            .map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         let statuses: Vec<MasterDataTaskStatus> = rows
             .iter()
@@ -49,15 +49,15 @@ impl MasterDataRepositories for MasterDataImpl {
         Ok(statuses)
     }
 
-    async fn list_role(&self) -> Result<Vec<MasterDataRole>, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn list_role(&self) -> Result<Vec<MasterDataRole>, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
         let rows = client
             .query(
                 "SELECT id, title, code, active, created_by, created_at, updated_at, updated_by FROM public.master_data_role;",
                 &[],
             )
             .await
-            .map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         let statuses: Vec<MasterDataRole> = rows
             .iter()
@@ -76,15 +76,15 @@ impl MasterDataRepositories for MasterDataImpl {
         Ok(statuses)
     }
 
-    async fn list_priority_levels(&self) -> Result<Vec<MasterDataPriorityLevels>, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn list_priority_levels(&self) -> Result<Vec<MasterDataPriorityLevels>, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
         let rows = client
             .query(
                 "SELECT id, seq, title, code, active, created_by, created_at, updated_at, updated_by FROM public.master_data_priority_levels;",
                 &[],
             )
             .await
-            .map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         let statuses: Vec<MasterDataPriorityLevels> = rows
             .iter()

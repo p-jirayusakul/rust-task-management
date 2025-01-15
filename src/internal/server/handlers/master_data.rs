@@ -3,7 +3,7 @@ use crate::internal::pkg::middleware::response::{
     response_success,
 };
 use actix_web::{ web, HttpResponse, Responder};
-use crate::internal::pkg::exceptions::custom_error::MyError;
+use crate::internal::pkg::exceptions::custom_error::CustomError;
 
 pub struct MasterDataHandler<T: MasterDataUseCase + Send + Sync> {
     use_case: T,
@@ -14,27 +14,27 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
         Self { use_case }
     }
 
-    pub async fn list_task_status(
+    async fn list_task_status(
         handler: web::Data<MasterDataHandler<T>>,
-    ) -> Result<impl Responder, MyError> {
+    ) -> Result<impl Responder, CustomError> {
         match handler.use_case.list_task_status().await {
             Ok(task_statuses) => Ok(HttpResponse::Ok().json(response_success("get list task status completed", task_statuses))),
             Err(e) => Err(e)
         }
     }
 
-    pub async fn list_role(
+    async fn list_role(
         handler: web::Data<MasterDataHandler<T>>,
-    ) -> Result<impl Responder, MyError> {
+    ) -> Result<impl Responder, CustomError> {
         match handler.use_case.list_role().await {
             Ok(task_statuses) => Ok(HttpResponse::Ok().json(response_success("get list role completed", task_statuses))),
             Err(e) => Err(e)
         }
     }
 
-    pub async fn list_priority_levels(
+    async fn list_priority_levels(
         handler: web::Data<MasterDataHandler<T>>,
-    ) -> Result<impl Responder, MyError> {
+    ) -> Result<impl Responder, CustomError> {
         match handler.use_case.list_priority_levels().await {
             Ok(task_statuses) => Ok(HttpResponse::Ok().json(response_success("get list priority levels completed", task_statuses))),
             Err(e) => Err(e)
@@ -42,7 +42,6 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
     }
 }
 
-// Static route registration
 pub fn configure_routes<T: MasterDataUseCase + Send + Sync + 'static>(
     cfg: &mut web::ServiceConfig,
 ) {

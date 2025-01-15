@@ -1,4 +1,4 @@
-use crate::internal::pkg::exceptions::custom_error::{MyError};
+use crate::internal::pkg::exceptions::custom_error::{CustomError};
 use crate::internal::pkg::utils::snowflake::Snowflake;
 use crate::internal::server::domain::entities::task::{CreateTask, Task, UpdateTask, UpdateTaskPriorityLevels, UpdateTaskStatus};
 use crate::internal::server::domain::repositories::task::TaskRepositories;
@@ -18,15 +18,15 @@ impl<S: Snowflake + Send + Sync> TaskImpl<S> {
 
 #[async_trait]
 impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
-    async fn list_task(&self) -> Result<Vec<Task>, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn list_task(&self) -> Result<Vec<Task>, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let rows = client
             .query(
                 "SELECT id, title, description, task_status_id, priority_levels_id, created_by, created_at, updated_at, updated_by FROM public.task;",
                 &[],
             )
-            .await.map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .await.map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         let tasks: Vec<Task> = rows
             .iter()
@@ -45,15 +45,15 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
 
         Ok(tasks)
     }
-    async fn get_task(&self, id: i64) -> Result<Task, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn get_task(&self, id: i64) -> Result<Task, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let row = client
             .query_one(
                 "SELECT id, title, description, task_status_id, priority_levels_id, created_by, created_at, updated_at, updated_by FROM public.task WHERE id = $1;",
                 &[&id],
             )
-            .await.map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .await.map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         let task = Task {
             id: row.get("id"),
@@ -69,8 +69,8 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
 
         Ok(task)
     }
-    async fn create_task(&self, task: CreateTask) -> Result<i64, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn create_task(&self, task: CreateTask) -> Result<i64, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
         let new_id = self.snowflake_id.generate() as i64;
 
         let row = client
@@ -86,13 +86,13 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
                 ],
             )
             .await
-            .map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         Ok(row.get(0))
     }
 
-    async fn update_task(&self, task: UpdateTask) -> Result<(), MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn update_task(&self, task: UpdateTask) -> Result<(), CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         client
             .execute(
@@ -114,13 +114,13 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
                 ],
             )
             .await
-            .map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         Ok(())
     }
 
-    async fn update_task_status(&self, task: UpdateTaskStatus) -> Result<(), MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn update_task_status(&self, task: UpdateTaskStatus) -> Result<(), CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         client
             .execute(
@@ -136,13 +136,13 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
                 ],
             )
             .await
-            .map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         Ok(())
     }
 
-    async fn update_task_priority_levels(&self, task: UpdateTaskPriorityLevels) -> Result<(), MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn update_task_priority_levels(&self, task: UpdateTaskPriorityLevels) -> Result<(), CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         client
             .execute(
@@ -158,13 +158,13 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
                 ],
             )
             .await
-            .map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         Ok(())
     }
 
-    async fn delete_task(&self, id: i64) -> Result<(), MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn delete_task(&self, id: i64) -> Result<(), CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         client
             .execute(
@@ -172,46 +172,46 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskImpl<S> {
                 &[&id],
             )
             .await
-            .map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         Ok(())
     }
 
-    async fn task_exists(&self, id: i64) -> Result<bool, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn task_exists(&self, id: i64) -> Result<bool, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let row = client
             .query_one(
                 "SELECT (COUNT(id) > 0) as is_already_exists FROM public.task WHERE id = $1;",
                 &[&id],
             )
-            .await.map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .await.map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         Ok(row.get::<_, bool>("is_already_exists"))
     }
 
-    async fn task_status_exists(&self, id: i64) -> Result<bool, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn task_status_exists(&self, id: i64) -> Result<bool, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let row = client
             .query_one(
                 "SELECT (COUNT(id) > 0) as is_already_exists FROM public.master_data_task_status WHERE id = $1;",
                 &[&id],
             )
-            .await.map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .await.map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         Ok(row.get::<_, bool>("is_already_exists"))
     }
 
-    async fn priority_exists(&self, id: i64) -> Result<bool, MyError> {
-        let client = self.pool.get().await.map_err(|e| MyError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+    async fn priority_exists(&self, id: i64) -> Result<bool, CustomError> {
+        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let row = client
             .query_one(
                 "SELECT (COUNT(id) > 0) as is_already_exists FROM public.master_data_priority_levels WHERE id = $1;",
                 &[&id],
             )
-            .await.map_err(|e| MyError::RepositoryError(format!("Database query failed: {}", e)))?;
+            .await.map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
         Ok(row.get::<_, bool>("is_already_exists"))
     }

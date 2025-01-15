@@ -5,7 +5,7 @@ use actix_web::{error, HttpResponse};
 use std::fmt::{Display, Formatter};
 #[allow(dead_code)]
 #[derive(Debug)]
-pub enum MyError {
+pub enum CustomError {
     ValidationError(String),
     InternalError(String),
     DomainError(String),
@@ -19,60 +19,60 @@ pub enum MyError {
     DataConflict(String),
 }
 
-impl Display for MyError {
+impl Display for CustomError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            MyError::ValidationError(message) => {
+            CustomError::ValidationError(message) => {
                 write!(f, "{}", message)
             }
-            MyError::InternalError(message) => {
+            CustomError::InternalError(message) => {
                 write!(f, "{}", message)
             }
-            MyError::DomainError(message) => {
+            CustomError::DomainError(message) => {
                 write!(f, "{}", message)
             }
-            MyError::BusinessError(message) => {
+            CustomError::BusinessError(message) => {
                 write!(f, "{}", message)
             }
-            MyError::SystemError(message) => {
+            CustomError::SystemError(message) => {
                 write!(f, "{}", message)
             }
-            MyError::NotFound(message) => {
+            CustomError::NotFound(message) => {
                 write!(f, "{}", message)
             }
-            MyError::RepositoryError(message) => {
+            CustomError::RepositoryError(message) => {
                 write!(f, "{}", message)
             }
-            MyError::UnknownError(message) => {
+            CustomError::UnknownError(message) => {
                 write!(f, "{}", message)
             }
-            MyError::Unauthorized(message) => {
+            CustomError::Unauthorized(message) => {
                 write!(f, "{}", message)
             }
-            MyError::Forbidden(message) => {
+            CustomError::Forbidden(message) => {
                 write!(f, "{}", message)
             }
-            MyError::DataConflict(message) => {
+            CustomError::DataConflict(message) => {
                 write!(f, "{}", message)
             }
         }
     }
 }
 
-impl error::ResponseError for MyError {
+impl error::ResponseError for CustomError {
     fn status_code(&self) -> StatusCode {
         match *self {
-            MyError::ValidationError { .. } => StatusCode::BAD_REQUEST,
-            MyError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            MyError::DomainError { .. } => StatusCode::BAD_REQUEST,
-            MyError::BusinessError { .. } => StatusCode::BAD_REQUEST,
-            MyError::SystemError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            MyError::NotFound { .. } => StatusCode::NOT_FOUND,
-            MyError::RepositoryError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            MyError::UnknownError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            MyError::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
-            MyError::Forbidden { .. } => StatusCode::FORBIDDEN,
-            MyError::DataConflict { .. } => StatusCode::CONFLICT,
+            CustomError::ValidationError { .. } => StatusCode::BAD_REQUEST,
+            CustomError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            CustomError::DomainError { .. } => StatusCode::BAD_REQUEST,
+            CustomError::BusinessError { .. } => StatusCode::BAD_REQUEST,
+            CustomError::SystemError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            CustomError::NotFound { .. } => StatusCode::NOT_FOUND,
+            CustomError::RepositoryError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            CustomError::UnknownError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            CustomError::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
+            CustomError::Forbidden { .. } => StatusCode::FORBIDDEN,
+            CustomError::DataConflict { .. } => StatusCode::CONFLICT,
         }
     }
     fn error_response(&self) -> HttpResponse {
