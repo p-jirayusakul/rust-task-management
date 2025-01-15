@@ -1,8 +1,7 @@
 use crate::internal::pkg::middleware::response::response_error;
-use actix_web::http::header::ContentType;
-use actix_web::http::StatusCode;
-use actix_web::{error, HttpResponse};
+use actix_web::{error, http::header::ContentType, http::StatusCode, HttpResponse};
 use std::fmt::{Display, Formatter};
+
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum CustomError {

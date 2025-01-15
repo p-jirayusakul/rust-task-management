@@ -9,18 +9,18 @@ use async_trait::async_trait;
 use deadpool_postgres::Pool;
 use std::sync::Arc;
 
-pub struct MasterDataImpl {
+pub struct MasterDataRepositoriesImpl {
     pool: Arc<Pool>,
 }
 
-impl MasterDataImpl {
+impl MasterDataRepositoriesImpl {
     pub fn new(pool: Arc<Pool>) -> Self {
         Self { pool }
     }
 }
 
 #[async_trait]
-impl MasterDataRepositories for MasterDataImpl {
+impl MasterDataRepositories for MasterDataRepositoriesImpl {
     async fn list_task_status(&self) -> Result<Vec<MasterDataTaskStatus>, CustomError> {
         let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 

@@ -18,7 +18,7 @@ use internal::{
             master_data::{configure_routes as configure_master_data_routes, MasterDataHandler},
             task::{configure_routes as configure_task_routes, TaskHandler},
         },
-        repository::{master_data::MasterDataImpl, task::TaskImpl},
+        repository::{master_data::MasterDataRepositoriesImpl, task::TaskRepositoriesImpl},
         use_case::{master_data::MasterDataUseCaseImpl, task::TaskUseCaseImpl},
     },
 };
@@ -52,13 +52,13 @@ async fn main() -> std::io::Result<()> {
                     // Master Data
                     .app_data(master_data_handler_data.clone())
                     .configure(|cfg| {
-                        configure_master_data_routes::<MasterDataUseCaseImpl<MasterDataImpl>>(cfg)
+                        configure_master_data_routes::<MasterDataUseCaseImpl<MasterDataRepositoriesImpl>>(cfg)
                     })
 
                     // Task Management
                     .app_data(task_handler_data.clone())
                     .configure(|cfg| {
-                        configure_task_routes::<TaskUseCaseImpl<TaskImpl<SnowflakeImpl>>>(cfg)
+                        configure_task_routes::<TaskUseCaseImpl<TaskRepositoriesImpl<SnowflakeImpl>>>(cfg)
                     }),
             )
     })
@@ -102,8 +102,8 @@ fn initialize_sonyflake() -> Result<Sonyflake, std::io::Error> {
 
 fn create_master_data_handler_data(
     pool: Arc<Pool>,
-) -> web::Data<MasterDataHandler<MasterDataUseCaseImpl<MasterDataImpl>>> {
-    let master_data_repository = MasterDataImpl::new(pool);
+) -> web::Data<MasterDataHandler<MasterDataUseCaseImpl<MasterDataRepositoriesImpl>>> {
+    let master_data_repository = MasterDataRepositoriesImpl::new(pool);
     let master_data_use_case = MasterDataUseCaseImpl::new(master_data_repository);
     let master_data_handler = MasterDataHandler::new(master_data_use_case);
     web::Data::new(master_data_handler)
@@ -112,8 +112,8 @@ fn create_master_data_handler_data(
 fn create_task_handler_data(
     pool: Arc<Pool>,
     snowflake_node: SnowflakeImpl,
-) -> web::Data<TaskHandler<TaskUseCaseImpl<TaskImpl<SnowflakeImpl>>>> {
-    let task_repository = TaskImpl::new(pool, snowflake_node);
+) -> web::Data<TaskHandler<TaskUseCaseImpl<TaskRepositoriesImpl<SnowflakeImpl>>>> {
+    let task_repository = TaskRepositoriesImpl::new(pool, snowflake_node);
     let task_use_case = TaskUseCaseImpl::new(task_repository);
     let task_handler = TaskHandler::new(task_use_case);
     web::Data::new(task_handler)

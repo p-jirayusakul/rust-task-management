@@ -12,6 +12,4 @@ pub trait TaskRepositories: Send + Sync {
     async fn update_task_priority_levels(&self, task: UpdateTaskPriorityLevels) -> Result<(), CustomError>;
     async fn delete_task(&self, id: i64) -> Result<(), CustomError>;
     async fn task_exists(&self, id: i64) -> Result<bool, CustomError>;
-    async fn task_status_exists(&self, id: i64) -> Result<bool, CustomError>;
-    async fn priority_exists(&self, id: i64) -> Result<bool, CustomError>;
 }
