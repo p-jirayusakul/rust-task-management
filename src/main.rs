@@ -2,7 +2,6 @@ use actix_web::{
     middleware::{ErrorHandlers, Logger},
     web, App, HttpServer, Result,
 };
-
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use env_logger::Env;
 use sonyflake::Sonyflake;
@@ -15,7 +14,7 @@ use internal::{
         error::add_error_header,
     }, utils::snowflake::SnowflakeImpl},
     server::{
-        config::server::{load_env, parse_port_from_env, ServerConfig},
+        config::server::{load_env, ServerConfig},
         handlers::{
             master_data::{configure_routes as configure_master_data_routes, MasterDataHandler},
             task::{configure_routes as configure_task_routes, TaskHandler},
@@ -30,15 +29,15 @@ const ENV_FILE: &str = ".env.local";
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     load_env(ENV_FILE);
-    let port = parse_port_from_env()?;
-    let db_config = ServerConfig::from_env()?;
-    let pool = create_db_pool(&db_config)?;
+    let config = ServerConfig::from_env()?;
+
+    let pool = create_db_pool(&config)?;
     let sonyflake = initialize_sonyflake()?;
     let snowflake_node = SnowflakeImpl::new(sonyflake);
 
     let master_data_handler_data = create_master_data_handler_data(Arc::clone(&pool));
     let task_handler_data = create_task_handler_data(Arc::clone(&pool), snowflake_node);
-    let user_handler_data = create_user_handler_data(Arc::clone(&pool));
+    let user_handler_data = create_user_handler_data(Arc::clone(&pool), &config);
 
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
@@ -51,12 +50,13 @@ async fn main() -> std::io::Result<()> {
             // รวม service
             .service(
                 web::scope("/api/v1")
+
                     // User
                     .app_data(user_handler_data.clone())
                     .configure(|cfg| {
                         configure_user_routes::<UserUseCaseImpl<UserRepositoriesImpl>>(cfg)
                     })
-                    // Add JWT
+
                     // Master Data
                     .app_data(master_data_handler_data.clone())
                     .configure(|cfg| {
@@ -71,7 +71,7 @@ async fn main() -> std::io::Result<()> {
                 ,
             )
     })
-    .bind(("127.0.0.1", port))?
+    .bind(("127.0.0.1", config.api_port))?
     .run()
     .await
 }
@@ -79,11 +79,11 @@ async fn main() -> std::io::Result<()> {
 fn create_db_pool(config: &ServerConfig) -> Result<Arc<Pool>, std::io::Error> {
     let mut db_cfg = tokio_postgres::Config::new();
     db_cfg
-        .dbname(&config.name)
-        .user(&config.user)
-        .password(&config.password)
-        .host(&config.host)
-        .port(config.port);
+        .dbname(&config.database_name)
+        .user(&config.database_user)
+        .password(&config.database_password)
+        .host(&config.database_host)
+        .port(config.database_port);
 
     let manager_config = ManagerConfig {
         recycling_method: RecyclingMethod::Fast,
@@ -130,9 +130,10 @@ fn create_task_handler_data(
 
 fn create_user_handler_data(
     pool: Arc<Pool>,
+    config: &ServerConfig,
 ) -> web::Data<UserHandler<UserUseCaseImpl<UserRepositoriesImpl>>> {
     let user_repository = UserRepositoriesImpl::new(pool);
-    let user_use_case = UserUseCaseImpl::new(user_repository);
+    let user_use_case = UserUseCaseImpl::new(user_repository, config.jwt_secret.clone());
     let user_handler = UserHandler::new(user_use_case);
     web::Data::new(user_handler)
 }

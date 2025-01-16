@@ -18,11 +18,16 @@ pub async fn jwt_middleware(
     if let Some(auth_header) = auth_header {
         if !auth_header.starts_with("Bearer ") {
             return Err(Error::from(CustomError::Unauthorized("Invalid Authorization header".to_string())));
-
         }
 
         let token = &auth_header[7..];
-        let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set in environment variables");
+        let jwt_secret = match env::var("JWT_SECRET") {
+            Ok(secret) => secret,
+            Err(_) => {
+                return Err(Error::from(CustomError::InternalError("JWT_SECRET is not set".to_string())));
+            }
+        };
+
         if let Err(_) = validate_token(token, jwt_secret.as_str()) {
             return Err(Error::from(CustomError::Unauthorized("Invalid JWT Token".to_string())));
         }

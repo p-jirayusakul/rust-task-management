@@ -1,4 +1,3 @@
-use std::env;
 use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::server::domain::entities::user::{
     Login,
@@ -12,11 +11,12 @@ use crate::internal::pkg::middleware::jwt::create_token;
 
 pub struct UserUseCaseImpl<T: UserRepositories> {
     repository: T,
+    jwt_secret: String
 }
 
 impl<T: UserRepositories> UserUseCaseImpl<T> {
-    pub fn new(repository: T) -> Self {
-        Self { repository }
+    pub fn new(repository: T, jwt_secret: String) -> Self {
+        Self { repository, jwt_secret }
     }
 }
 
@@ -28,8 +28,8 @@ impl<T: UserRepositories> UserUseCase for UserUseCaseImpl<T> {
         let is_valid = verify(&payload.password, &user.password).map_err(|e| CustomError::BusinessError(format!("Password verification failed: {}", e)))?;
 
         if is_valid {
-            let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set in environment variables");
-            let token = create_token(user.id, jwt_secret.as_str());
+            let token = create_token(user.id, self.jwt_secret.as_str());
+
             Ok(LoginToken {
                 token,
             })
