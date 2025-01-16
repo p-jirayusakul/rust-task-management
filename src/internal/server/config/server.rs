@@ -27,7 +27,7 @@ pub fn load_env(env_file: &str) {
     if dotenv::from_filename(env_file).is_err() {
         println!("Warning: {} not found. Using OS environment variables instead.", env_file);
     }
-    for &key in &["APP_PORT", "DB_HOST", "DB_PORT", "DB_DATABASE", "DB_USERNAME", "DB_PASSWORD"] {
+    for &key in &["APP_PORT", "DB_HOST", "DB_PORT", "DB_DATABASE", "DB_USERNAME", "DB_PASSWORD", "JWT_SECRET"] {
         if env::var(key).is_err() {
             println!("Warning: Environment variable {} is not set!", key);
         }

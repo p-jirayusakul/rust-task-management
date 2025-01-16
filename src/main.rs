@@ -1,3 +1,4 @@
+use std::env;
 use actix_web::{
     middleware::{ErrorHandlers, Logger},
     web, App, HttpServer, Result,
@@ -11,17 +12,21 @@ use tokio_postgres::NoTls;
 
 mod internal;
 use internal::{
-    pkg::{middleware::error::add_error_header, utils::snowflake::SnowflakeImpl},
+    pkg::{middleware::{
+        error::add_error_header,
+    }, utils::snowflake::SnowflakeImpl},
     server::{
         config::server::{load_env, parse_port_from_env, DatabaseConfig},
         handlers::{
             master_data::{configure_routes as configure_master_data_routes, MasterDataHandler},
             task::{configure_routes as configure_task_routes, TaskHandler},
+            user::{configure_routes as configure_user_routes, UserHandler},
         },
-        repository::{master_data::MasterDataRepositoriesImpl, task::TaskRepositoriesImpl},
-        use_case::{master_data::MasterDataUseCaseImpl, task::TaskUseCaseImpl},
+        repository::{master_data::MasterDataRepositoriesImpl, task::TaskRepositoriesImpl, user::UserRepositoriesImpl},
+        use_case::{master_data::MasterDataUseCaseImpl, task::TaskUseCaseImpl, user::UserUseCaseImpl},
     },
 };
+use crate::internal::pkg::middleware::auth::JwtMiddleware;
 
 const ENV_FILE: &str = ".env.local";
 
@@ -36,6 +41,9 @@ async fn main() -> std::io::Result<()> {
 
     let master_data_handler_data = create_master_data_handler_data(Arc::clone(&pool));
     let task_handler_data = create_task_handler_data(Arc::clone(&pool), snowflake_node);
+    let user_handler_data = create_user_handler_data(Arc::clone(&pool));
+
+    let jwt_secret = env::var("JWT_SECRET").expect("DB_PASSWORD must be set in environment variables");
 
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
@@ -49,6 +57,14 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api/v1")
 
+
+
+                    // User
+                    .app_data(user_handler_data.clone())
+                    .configure(|cfg| {
+                        configure_user_routes::<UserUseCaseImpl<UserRepositoriesImpl>>(cfg)
+                    })
+                    .wrap(JwtMiddleware::new(jwt_secret.as_str())) // Add JWT
                     // Master Data
                     .app_data(master_data_handler_data.clone())
                     .configure(|cfg| {
@@ -59,7 +75,8 @@ async fn main() -> std::io::Result<()> {
                     .app_data(task_handler_data.clone())
                     .configure(|cfg| {
                         configure_task_routes::<TaskUseCaseImpl<TaskRepositoriesImpl<SnowflakeImpl>>>(cfg)
-                    }),
+                    })
+                ,
             )
     })
     .bind(("127.0.0.1", port))?
@@ -117,4 +134,13 @@ fn create_task_handler_data(
     let task_use_case = TaskUseCaseImpl::new(task_repository);
     let task_handler = TaskHandler::new(task_use_case);
     web::Data::new(task_handler)
+}
+
+fn create_user_handler_data(
+    pool: Arc<Pool>,
+) -> web::Data<UserHandler<UserUseCaseImpl<UserRepositoriesImpl>>> {
+    let user_repository = UserRepositoriesImpl::new(pool);
+    let user_use_case = UserUseCaseImpl::new(user_repository);
+    let user_handler = UserHandler::new(user_use_case);
+    web::Data::new(user_handler)
 }
