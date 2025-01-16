@@ -11,6 +11,5 @@ pub struct LoginToken {
 
 pub struct User {
     pub id: i64,
-    pub username: String,
     pub password: String,
 }

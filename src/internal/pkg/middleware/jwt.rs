@@ -1,27 +1,24 @@
 use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, TokenData};
 use serde::{Deserialize, Serialize};
 use chrono::{Utc, Duration};
-
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, guard, web, App};
 use actix_web::error::Result;
-use jsonwebtoken::errors::ErrorKind;
 
 // Struct ของ Claims
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    sub: String, // Subject (เช่น user ID)
+    sub: i64, // Subject (เช่น user ID)
     exp: usize,  // Expiration time
 }
 
 // ฟังก์ชันสำหรับสร้าง JWT
-pub fn create_token(user_id: &str, secret: &str) -> String {
+pub fn create_token(user_id: i64, secret: &str) -> String {
     let expiration = Utc::now()
         .checked_add_signed(Duration::seconds(3600)) // อายุของโทเค็น (1 ชั่วโมง)
         .expect("Unable to calculate expiration time")
         .timestamp() as usize;
 
     let claims = Claims {
-        sub: user_id.to_owned(),
+        sub: user_id,
         exp: expiration,
     };
 

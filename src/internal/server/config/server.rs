@@ -1,14 +1,16 @@
 use std::env;
 
-pub struct DatabaseConfig {
+#[allow(dead_code)]
+pub struct ServerConfig {
     pub host: String,
     pub port: u16,
     pub name: String,
     pub user: String,
     pub password: String,
+    pub jwt_secret: String,
 }
 
-impl DatabaseConfig {
+impl ServerConfig {
     pub fn from_env() -> Result<Self, std::io::Error> {
         Ok(Self {
             host: env::var("DB_HOST").expect("DB_HOST must be set in environment variables"),
@@ -19,6 +21,7 @@ impl DatabaseConfig {
             name: env::var("DB_DATABASE").expect("DB_DATABASE must be set in environment variables"),
             user: env::var("DB_USERNAME").expect("DB_USERNAME must be set in environment variables"),
             password: env::var("DB_PASSWORD").expect("DB_PASSWORD must be set in environment variables"),
+            jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET must be set in environment variables"),
         })
     }
 }

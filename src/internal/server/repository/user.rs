@@ -36,7 +36,6 @@ impl UserRepositories for UserRepositoriesImpl {
 
         let user = User {
             id: row.get("id"),
-            username: row.get("username"),
             password: row.get("password"),
         };
 
