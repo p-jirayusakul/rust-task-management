@@ -71,7 +71,8 @@ async fn main() -> std::io::Result<()> {
                 ,
             )
     })
-    .bind(("127.0.0.1", config.api_port))?
+    .bind(("0.0.0.0", config.api_port))
+        .expect("Cannot bind to port 4000")
     .run()
     .await
 }

@@ -1,13 +1,13 @@
-FROM rust:latest as builder
+FROM rust:1.84.0 as builder
 WORKDIR /usr/src/myapp
 COPY . .
 RUN cargo install --path .
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 RUN apt-get update && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/cargo/bin/myapp /usr/local/bin/myapp
 
-ENV DB_HOST=localhost
+ENV DB_HOST=host.docker.internal
 ENV DB_PORT=5432
 ENV DB_DATABASE=task_management
 ENV DB_USERNAME=postgres
