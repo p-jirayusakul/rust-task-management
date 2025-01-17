@@ -1,0 +1,4 @@
+# Ignore environment and config files (if not needed in the container)
+.env
+.env.local
+*.env

@@ -1,7 +1,11 @@
 [package]
-name = "test-rust"
+name = "myapp"
 version = "0.1.0"
 edition = "2021"
+
+[[bin]]
+name = "myapp"
+path = "src/main.rs"
 
 [dependencies]
 actix-web = "4"

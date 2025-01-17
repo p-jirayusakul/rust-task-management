@@ -1286,6 +1286,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "myapp"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "async-trait",
+ "bcrypt",
+ "chrono",
+ "deadpool-postgres",
+ "dotenv",
+ "env_logger",
+ "futures",
+ "futures-util",
+ "jsonwebtoken",
+ "log",
+ "mockall",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sonyflake",
+ "tokio",
+ "tokio-postgres",
+ "validator",
+]
+
+[[package]]
 name = "no-std-net"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1893,31 +1918,6 @@ name = "termtree"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
-
-[[package]]
-name = "test-rust"
-version = "0.1.0"
-dependencies = [
- "actix-web",
- "async-trait",
- "bcrypt",
- "chrono",
- "deadpool-postgres",
- "dotenv",
- "env_logger",
- "futures",
- "futures-util",
- "jsonwebtoken",
- "log",
- "mockall",
- "serde",
- "serde_derive",
- "serde_json",
- "sonyflake",
- "tokio",
- "tokio-postgres",
- "validator",
-]
 
 [[package]]
 name = "thiserror"
