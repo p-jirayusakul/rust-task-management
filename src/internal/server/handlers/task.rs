@@ -3,10 +3,9 @@ use crate::internal::server::domain::entities::task::{CreateTask as CreateTaskEn
 use crate::internal::server::domain::use_case::task::TaskUseCase;
 use crate::internal::server::request::task::{TaskRequest, UpdateTaskPriorityLevelsRequest, UpdateTaskStatusRequest};
 use actix_web::{web, HttpResponse, Responder};
-use actix_web::middleware::from_fn;
 use validator::Validate;
 use crate::internal::pkg::exceptions::custom_error::CustomError;
-use crate::internal::pkg::middleware::auth::jwt_middleware;
+use crate::internal::pkg::middleware::auth::JwtMiddleware;
 
 pub struct TaskHandler<T: TaskUseCase + Send + Sync> {
     use_case: T,
@@ -129,10 +128,10 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
 }
 
 
-pub fn configure_routes<T: TaskUseCase + Send + Sync + 'static>(cfg: &mut web::ServiceConfig) {
+pub fn configure_routes<T: TaskUseCase + Send + Sync + 'static>(cfg: &mut web::ServiceConfig, jwt_secret: String) {
     cfg.service(
         web::scope("/task")
-            .wrap(from_fn(jwt_middleware))
+            .wrap(JwtMiddleware::new(jwt_secret))
             .route("", web::get().to(TaskHandler::<T>::list_task))
             .route("/{task_id}", web::get().to(TaskHandler::<T>::get_task))
             .route("", web::post().to(TaskHandler::<T>::create_task))

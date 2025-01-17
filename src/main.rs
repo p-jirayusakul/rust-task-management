@@ -66,7 +66,7 @@ async fn main() -> std::io::Result<()> {
                     // Task Management
                     .app_data(task_handler_data.clone())
                     .configure(|cfg| {
-                        configure_task_routes::<TaskUseCaseImpl<TaskRepositoriesImpl<SnowflakeImpl>>>(cfg)
+                        configure_task_routes::<TaskUseCaseImpl<TaskRepositoriesImpl<SnowflakeImpl>>>(cfg, config.jwt_secret.clone())
                     })
                 ,
             )
