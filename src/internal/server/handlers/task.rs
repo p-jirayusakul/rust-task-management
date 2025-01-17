@@ -1,11 +1,11 @@
-use crate::internal::pkg::middleware::response::{response_success};
+use crate::internal::pkg::exceptions::custom_error::CustomError;
+use crate::internal::pkg::middleware::auth::JwtMiddleware;
+use crate::internal::pkg::middleware::response::response_success;
 use crate::internal::server::domain::entities::task::{CreateTask as CreateTaskEntity, UpdateTask as UpdateTaskEntity, UpdateTaskPriorityLevels as UpdateTaskPriorityLevelsEntity, UpdateTaskStatus as UpdateTaskStatusEntity};
 use crate::internal::server::domain::use_case::task::TaskUseCase;
 use crate::internal::server::request::task::{TaskRequest, UpdateTaskPriorityLevelsRequest, UpdateTaskStatusRequest};
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use validator::Validate;
-use crate::internal::pkg::exceptions::custom_error::CustomError;
-use crate::internal::pkg::middleware::auth::JwtMiddleware;
 
 pub struct TaskHandler<T: TaskUseCase + Send + Sync> {
     use_case: T,
@@ -34,8 +34,10 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
     pub async fn create_task(
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<TaskRequest>,
+        req: HttpRequest,
     ) ->  Result<impl Responder, CustomError> {
-        
+        let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
+
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
 
         let new_task_entity = CreateTaskEntity {
@@ -43,7 +45,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
             description: body.description.clone(),
             task_status_id: body.task_status_id,
             priority_levels_id: body.priority_levels_id,
-            created_by: 1844995683120058368,
+            created_by: user_id,
         };
 
         match handler.use_case.create_task(new_task_entity).await {
@@ -55,8 +57,10 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
     pub async fn update_task(
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<TaskRequest>,
-        path: web::Path<i64>
+        path: web::Path<i64>,
+        req: HttpRequest,
     ) -> Result<impl Responder, CustomError> {
+        let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
         let task_id = path.into_inner();
 
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
@@ -67,7 +71,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
             description: body.description.clone(),
             task_status_id: body.task_status_id,
             priority_levels_id: body.priority_levels_id,
-            updated_by: 1844995683120058368,
+            updated_by: user_id,
         };
 
         match handler.use_case.update_task(update_task_entity).await {
@@ -79,8 +83,10 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
     pub async fn update_task_status(
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<UpdateTaskStatusRequest>,
-        path: web::Path<i64>
+        path: web::Path<i64>,
+        req: HttpRequest,
     ) -> Result<impl Responder, CustomError> {
+        let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
         let task_id = path.into_inner();
 
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
@@ -88,7 +94,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         let update_task_entity = UpdateTaskStatusEntity {
             id: task_id,
             task_status_id: body.task_status_id,
-            updated_by: 1844995683120058368,
+            updated_by: user_id,
         };
 
         match handler.use_case.update_task_status(update_task_entity).await {
@@ -100,8 +106,10 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
     pub async fn update_task_priority_levels(
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<UpdateTaskPriorityLevelsRequest>,
-        path: web::Path<i64>
+        path: web::Path<i64>,
+        req: HttpRequest,
     ) -> Result<impl Responder, CustomError> {
+        let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
         let task_id = path.into_inner();
 
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
@@ -109,7 +117,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         let update_task_entity = UpdateTaskPriorityLevelsEntity {
             id: task_id,
             priority_levels_id: body.priority_levels_id,
-            updated_by: 1844995683120058368,
+            updated_by: user_id,
         };
 
         match handler.use_case.update_task_priority_levels(update_task_entity).await {

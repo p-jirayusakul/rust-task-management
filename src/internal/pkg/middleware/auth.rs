@@ -2,18 +2,8 @@ use std::future::{ready, Ready};
 
 use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::pkg::middleware::jwt::validate_token;
-use actix_web::{
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error,
-};
+use actix_web::{dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform}, Error, HttpMessage};
 use futures_util::future::LocalBoxFuture;
-use serde::{Deserialize, Serialize};
-// Payload structure for decoding JWT
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    sub: String, // The subject (e.g., user ID)
-    exp: usize,  // Expiration time in seconds
-}
 
 // Middleware structure
 pub struct JwtMiddleware {
@@ -82,7 +72,7 @@ where
 
             match validate_token(token, self.secret.as_str()) {
                 Ok(token_data) => {
-                    println!("Token is valid: {:?}", token_data.claims);
+                    req.extensions_mut().insert(token_data.claims.sub);
                 }
                 Err(_) => {
                     return Box::pin(async { return Err(Error::from(CustomError::Unauthorized("Invalid JWT Token".to_string()))); });

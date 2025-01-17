@@ -16,6 +16,7 @@ pub enum CustomError {
     Unauthorized(String),
     Forbidden(String),
     DataConflict(String),
+    SubNotfound,
 }
 
 impl Display for CustomError {
@@ -54,6 +55,9 @@ impl Display for CustomError {
             CustomError::DataConflict(message) => {
                 write!(f, "{}", message)
             }
+            CustomError::SubNotfound => {
+                write!(f, "{}", "sub not found")
+            }
         }
     }
 }
@@ -72,6 +76,7 @@ impl error::ResponseError for CustomError {
             CustomError::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
             CustomError::Forbidden { .. } => StatusCode::FORBIDDEN,
             CustomError::DataConflict { .. } => StatusCode::CONFLICT,
+            CustomError::SubNotfound => StatusCode::UNAUTHORIZED,
         }
     }
     fn error_response(&self) -> HttpResponse {

@@ -6,8 +6,8 @@ use actix_web::error::Result;
 // Struct ของ Claims
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
-    sub: i64, // Subject (เช่น user ID)
-    exp: usize,  // Expiration time
+    pub sub: i64, // Subject (เช่น user ID)
+    pub exp: usize,  // Expiration time
 }
 
 // ฟังก์ชันสำหรับสร้าง JWT
