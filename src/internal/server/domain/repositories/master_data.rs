@@ -5,7 +5,9 @@ use crate::internal::server::domain::entities::master_data::{
     MasterDataPriorityLevels,
 };
 use crate::internal::pkg::exceptions::custom_error::CustomError;
+use mockall::automock;
 
+#[automock]
 #[async_trait]
 pub trait MasterDataRepositories: Send + Sync {
     async fn list_task_status(&self) -> Result<Vec<MasterDataTaskStatus>, CustomError>;

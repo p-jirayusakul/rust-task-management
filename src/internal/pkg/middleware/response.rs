@@ -1,13 +1,13 @@
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Serialize,Deserialize, PartialEq)]
 pub struct ApiResponse<T> {
     pub status: String,
     pub message: String,
     pub data: T,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, PartialEq)]
 pub struct ApiResponseErr {
     pub status: String,
     pub message: String
