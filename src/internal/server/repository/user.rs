@@ -8,19 +8,19 @@ use crate::internal::pkg::exceptions::error_message::{RECORD_NOT_FOUND, USERNAME
 use crate::internal::server::domain::entities::user::User;
 
 pub struct UserRepositoriesImpl {
-    pool: Arc<Pool>,
+    db_conn: Arc<Pool>,
 }
 
 impl UserRepositoriesImpl {
-    pub fn new(pool: Arc<Pool>) -> Self {
-        Self { pool }
+    pub fn new(db_conn: Arc<Pool>) -> Self {
+        Self { db_conn }
     }
 }
 
 #[async_trait]
 impl UserRepositories for UserRepositoriesImpl {
     async fn user_exists(&self, username: &str) -> Result<User, CustomError>{
-        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+        let client = self.db_conn.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let row = client
             .query_one(

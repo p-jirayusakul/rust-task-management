@@ -36,10 +36,13 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         body: web::Json<TaskRequest>,
         req: HttpRequest,
     ) ->  Result<impl Responder, CustomError> {
+        // sub จาก JWT ที่ถอดมาจาก middleware
         let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
 
+        // validate body request
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
 
+        // เตรียมข้อมูลส่งให้ layer use case
         let new_task_entity = CreateTaskEntity {
             title: body.title.clone(),
             description: body.description.clone(),
@@ -48,6 +51,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
             created_by: user_id,
         };
 
+        // เรียก use case และ return
         match handler.use_case.create_task(new_task_entity).await {
             Ok(task_id) => Ok(HttpResponse::Created().json(response_success("Task created successfully", task_id))),
             Err(e) => Err(e),

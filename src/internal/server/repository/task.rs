@@ -10,20 +10,20 @@ use deadpool_postgres::Pool;
 use std::sync::Arc;
 
 pub struct TaskRepositoriesImpl<S: Snowflake + Send + Sync> {
-    pool: Arc<Pool>,
+    db_conn: Arc<Pool>,
     snowflake_id: S,
 }
 
 impl<S: Snowflake + Send + Sync> TaskRepositoriesImpl<S> {
-    pub fn new(pool: Arc<Pool>, snowflake_id: S) -> Self {
-        Self { pool, snowflake_id }
+    pub fn new(db_conn: Arc<Pool>, snowflake_id: S) -> Self {
+        Self { db_conn, snowflake_id }
     }
 }
 
 #[async_trait]
 impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
     async fn list_task(&self) -> Result<Vec<Task>, CustomError> {
-        let client = self.pool.get().await.map_err(|e| {
+        let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;
 
@@ -52,7 +52,7 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
         Ok(tasks)
     }
     async fn get_task(&self, id: i64) -> Result<Task, CustomError> {
-        let client = self.pool.get().await.map_err(|e| {
+        let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;
 
@@ -83,7 +83,7 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
         Ok(task)
     }
     async fn create_task(&self, task: CreateTask) -> Result<i64, CustomError> {
-        let client = self.pool.get().await.map_err(|e| {
+        let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;
         let new_id = self.snowflake_id.generate() as i64;
@@ -107,7 +107,7 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
     }
 
     async fn update_task(&self, task: UpdateTask) -> Result<(), CustomError> {
-        let client = self.pool.get().await.map_err(|e| {
+        let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;
 
@@ -137,7 +137,7 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
     }
 
     async fn update_task_status(&self, task: UpdateTaskStatus) -> Result<(), CustomError> {
-        let client = self.pool.get().await.map_err(|e| {
+        let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;
 
@@ -160,7 +160,7 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
         &self,
         task: UpdateTaskPriorityLevels,
     ) -> Result<(), CustomError> {
-        let client = self.pool.get().await.map_err(|e| {
+        let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;
 
@@ -180,7 +180,7 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
     }
 
     async fn delete_task(&self, id: i64) -> Result<(), CustomError> {
-        let client = self.pool.get().await.map_err(|e| {
+        let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;
 
@@ -193,7 +193,7 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
     }
 
     async fn task_exists(&self, id: i64) -> Result<bool, CustomError> {
-        let client = self.pool.get().await.map_err(|e| {
+        let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;
 

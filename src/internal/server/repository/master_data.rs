@@ -10,23 +10,23 @@ use deadpool_postgres::Pool;
 use std::sync::Arc;
 
 pub struct MasterDataRepositoriesImpl {
-    pool: Arc<Pool>,
+    db_conn: Arc<Pool>,
 }
 
 impl MasterDataRepositoriesImpl {
-    pub fn new(pool: Arc<Pool>) -> Self {
-        Self { pool }
+    pub fn new(db_conn: Arc<Pool>) -> Self {
+        Self { db_conn }
     }
 }
 
 #[async_trait]
 impl MasterDataRepositories for MasterDataRepositoriesImpl {
     async fn list_task_status(&self) -> Result<Vec<MasterDataTaskStatus>, CustomError> {
-        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+        let client = self.db_conn.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let rows = client
             .query(
-                "SELECT id, title, code, active, created_by, created_at, updated_at, updated_by FROM public.master_data_task_status;",
+                "SELECT id, title, code FROM public.master_data_task_status WHERE active IS TRUE;",
                 &[],
             )
             .await
@@ -38,11 +38,6 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
                 id: row.get("id"),
                 title: row.get("title"),
                 code: row.get("code"),
-                active: row.get("active"),
-                created_by: row.get("created_by"),
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-                updated_by: row.get("updated_by"),
             })
             .collect();
 
@@ -50,10 +45,10 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
     }
 
     async fn list_role(&self) -> Result<Vec<MasterDataRole>, CustomError> {
-        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+        let client = self.db_conn.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
         let rows = client
             .query(
-                "SELECT id, title, code, active, created_by, created_at, updated_at, updated_by FROM public.master_data_role;",
+                "SELECT id, title, code FROM public.master_data_role WHERE active IS TRUE;",
                 &[],
             )
             .await
@@ -65,11 +60,6 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
                 id: row.get("id"),
                 title: row.get("title"),
                 code: row.get("code"),
-                active: row.get("active"),
-                created_by: row.get("created_by"),
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-                updated_by: row.get("updated_by"),
             })
             .collect();
 
@@ -77,10 +67,10 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
     }
 
     async fn list_priority_levels(&self) -> Result<Vec<MasterDataPriorityLevels>, CustomError> {
-        let client = self.pool.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
+        let client = self.db_conn.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
         let rows = client
             .query(
-                "SELECT id, seq, title, code, active, created_by, created_at, updated_at, updated_by FROM public.master_data_priority_levels;",
+                "SELECT id, title, code FROM public.master_data_priority_levels WHERE active IS TRUE ORDER BY seq ASC;",
                 &[],
             )
             .await
@@ -90,14 +80,8 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
             .iter()
             .map(|row| MasterDataPriorityLevels {
                 id: row.get("id"),
-                seq: row.get("seq"),
                 title: row.get("title"),
                 code: row.get("code"),
-                active: row.get("active"),
-                created_by: row.get("created_by"),
-                created_at: row.get("created_at"),
-                updated_at: row.get("updated_at"),
-                updated_by: row.get("updated_by"),
             })
             .collect();
 
