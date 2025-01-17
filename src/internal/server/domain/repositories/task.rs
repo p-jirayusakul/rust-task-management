@@ -2,6 +2,9 @@ use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::server::domain::entities::task::{CreateTask, Task, UpdateTask, UpdateTaskPriorityLevels, UpdateTaskStatus};
 use async_trait::async_trait;
 
+use mockall::automock;
+
+#[automock]
 #[async_trait]
 pub trait TaskRepositories: Send + Sync {
     async fn list_task(&self) -> Result<Vec<Task>, CustomError>;

@@ -1,5 +1,7 @@
 use sonyflake::Sonyflake;
+use mockall::automock;
 
+#[automock]
 pub trait Snowflake {
     fn generate(&self) -> u64;
 }

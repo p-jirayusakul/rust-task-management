@@ -4,7 +4,7 @@ use serde::{
     Serialize,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Task {
     pub id: i64,
     pub title: String,
@@ -17,7 +17,7 @@ pub struct Task {
     pub updated_by: Option<i64>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct TaskID {
     pub id: i64,
 }

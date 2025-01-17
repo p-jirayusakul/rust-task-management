@@ -3,4 +3,4 @@ pub mod config;
 pub mod repository;
 pub mod use_case;
 pub mod handlers;
-mod request;
+pub(crate) mod request;
