@@ -10,8 +10,6 @@
 ## :notebook: Document
 - [database design](https://dbdiagram.io/d/Task-Management-67078fc497a66db9a3831449)
 - [collection postman](https://documenter.getpostman.com/view/6440353/2sAXxV6W24)
-- collection postman file ใน root project ไฟล์ชื่อว่า [task management.postman_collection.json](https://gitlab.devlab.dev/xsifi/learing/backend/task_phatthakarn_jir/-/blob/main/task%20management-%20local%20auth.postman_collection.json)
-- swagger [http://localhost:4000/api/v1/swagger](http://localhost:4000/api/v1/swagger)
 ## :boy: Username for testing
 | Username| Password | Role | Ability |
 | :---------------- | :------: | :----: | :---- |
