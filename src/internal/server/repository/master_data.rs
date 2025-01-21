@@ -32,7 +32,7 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
             .await
             .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
-        let statuses: Vec<MasterDataTaskStatus> = rows
+        let items: Vec<MasterDataTaskStatus> = rows
             .iter()
             .map(|row| MasterDataTaskStatus {
                 id: row.get("id"),
@@ -41,7 +41,7 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
             })
             .collect();
 
-        Ok(statuses)
+        Ok(items)
     }
 
     async fn list_role(&self) -> Result<Vec<MasterDataRole>, CustomError> {
@@ -54,7 +54,7 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
             .await
             .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
-        let statuses: Vec<MasterDataRole> = rows
+        let items: Vec<MasterDataRole> = rows
             .iter()
             .map(|row| MasterDataRole {
                 id: row.get("id"),
@@ -63,7 +63,7 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
             })
             .collect();
 
-        Ok(statuses)
+        Ok(items)
     }
 
     async fn list_priority_levels(&self) -> Result<Vec<MasterDataPriorityLevels>, CustomError> {
@@ -76,7 +76,7 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
             .await
             .map_err(|e| CustomError::RepositoryError(format!("Database query failed: {}", e)))?;
 
-        let statuses: Vec<MasterDataPriorityLevels> = rows
+        let items: Vec<MasterDataPriorityLevels> = rows
             .iter()
             .map(|row| MasterDataPriorityLevels {
                 id: row.get("id"),
@@ -85,6 +85,6 @@ impl MasterDataRepositories for MasterDataRepositoriesImpl {
             })
             .collect();
 
-        Ok(statuses)
+        Ok(items)
     }
 }

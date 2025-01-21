@@ -4,7 +4,7 @@ use crate::internal::server::domain::entities::task::{Task, CreateTask, UpdateTa
 
 
 #[async_trait]
-pub trait TaskUseCase {
+pub trait TaskUseCase: Send + Sync {
     async fn list_task(&self) -> Result<Vec<Task>, CustomError>;
     async fn get_task(&self, id: i64) -> Result<Task, CustomError>;
     async fn create_task(&self, task: CreateTask) -> Result<TaskID, CustomError>;

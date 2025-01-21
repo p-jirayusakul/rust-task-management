@@ -1,7 +1,4 @@
-use actix_web::{
-    middleware::{ErrorHandlers, Logger},
-    web, App, HttpServer, Result,
-};
+use actix_web::{middleware::{ErrorHandlers, Logger}, web, App, HttpServer, Result};
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use env_logger::Env;
 use sonyflake::Sonyflake;
@@ -19,22 +16,25 @@ use internal::{
             master_data::{configure_routes as configure_master_data_routes, MasterDataHandler},
             task::{configure_routes as configure_task_routes, TaskHandler},
             user::{configure_routes as configure_user_routes, UserHandler},
+            health_check::{configure_routes as config_health_check_routes, HealthCheckHandler},
         },
-        repository::{master_data::MasterDataRepositoriesImpl, task::TaskRepositoriesImpl, user::UserRepositoriesImpl},
-        use_case::{master_data::MasterDataUseCaseImpl, task::TaskUseCaseImpl, user::UserUseCaseImpl},
+        repository::{health_check::HealthCheckRepositoriesImpl, master_data::MasterDataRepositoriesImpl, task::TaskRepositoriesImpl, user::UserRepositoriesImpl},
+        use_case::{health_check::HealthCheckUseCaseImpl, master_data::MasterDataUseCaseImpl, task::TaskUseCaseImpl, user::UserUseCaseImpl},
     },
 };
+
 const ENV_FILE: &str = ".env.local";
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    load_env(ENV_FILE);
+    load_env(ENV_FILE).expect("Failed to load environment variables.");
     let config = ServerConfig::from_env()?;
 
     let pool = create_db_pool(&config)?;
     let sonyflake = initialize_sonyflake()?;
     let snowflake_node = SnowflakeImpl::new(sonyflake);
 
+    let health_check_handler_data = create_health_check_handler_data(Arc::clone(&pool));
     let master_data_handler_data = create_master_data_handler_data(Arc::clone(&pool));
     let task_handler_data = create_task_handler_data(Arc::clone(&pool), snowflake_node);
     let user_handler_data = create_user_handler_data(Arc::clone(&pool), &config);
@@ -51,6 +51,12 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api/v1")
 
+                    // Health Check
+                    .app_data(health_check_handler_data.clone())
+                    .configure(|cfg| {
+                        config_health_check_routes::<HealthCheckUseCaseImpl<HealthCheckRepositoriesImpl>>(cfg)
+                    })
+                    
                     // User
                     .app_data(user_handler_data.clone())
                     .configure(|cfg| {
@@ -108,6 +114,15 @@ fn initialize_sonyflake() -> Result<Sonyflake, std::io::Error> {
         )
     })?;
     Ok(sonyflake)
+}
+
+fn create_health_check_handler_data(
+    pool: Arc<Pool>,
+) -> web::Data<HealthCheckHandler<HealthCheckUseCaseImpl<HealthCheckRepositoriesImpl>>> {
+    let health_check_repository = HealthCheckRepositoriesImpl::new(pool);
+    let health_check_use_case = HealthCheckUseCaseImpl::new(health_check_repository);
+    let health_check_handler = HealthCheckHandler::new(health_check_use_case);
+    web::Data::new(health_check_handler)
 }
 
 fn create_master_data_handler_data(
