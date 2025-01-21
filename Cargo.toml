@@ -8,22 +8,22 @@ name = "myapp"
 path = "src/main.rs"
 
 [dependencies]
-actix-web = "4"
+actix-web = "4.9"
 serde_derive = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-validator = { version = "0.19", features = ["derive"] }
-chrono = { version = "0.4.39", features = ["serde"] }
-async-trait = "0.1.85"
-tokio-postgres = {version = "0.7.12", features = ["with-chrono-0_4"]}
-deadpool-postgres = "0.14.1"
+validator = { version = "0.20", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+async-trait = "0.1"
+tokio-postgres = {version = "0.7", features = ["with-chrono-0_4"]}
+deadpool-postgres = "0.14"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 dotenv="0.15"
 sonyflake = "0.3"
-serde_json = "1.0.135"
-env_logger = "0.11.6"
-log = "0.4.22"
-bcrypt = "0.16.0"
-jsonwebtoken = "9.3.0"
-futures-util = "0.3.31"
-futures = "0.3.31"
-mockall = "0.13.1"
+serde_json = "1.0"
+env_logger = "0.11"
+log = "0.4"
+bcrypt = "0.16"
+jsonwebtoken = "9.3"
+futures-util = "0.3"
+futures = "0.3"
+mockall = "0.13"
