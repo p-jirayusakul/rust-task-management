@@ -43,8 +43,9 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            // จัดการ logger
-            .wrap(Logger::default())
+            .wrap(
+                Logger::default().exclude_regex(r"/(health-check/)") // ช้าม logging health-check เพราะไม่มีความจำเป็น
+            )
             // จัดการ error response ทั้งหมดใน API
             .wrap(ErrorHandlers::new().default_handler(add_error_header))
             // รวม service
