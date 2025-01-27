@@ -59,11 +59,11 @@ services:
     networks:
       - my_network
 
-  api-task-management:
+  api-task-management-rust:
     build:
       context: .
       dockerfile: Dockerfile
-    image: api-task-management:latest
+    image: api-task-management-rust:latest
     restart: unless-stopped
     environment:
       DB_HOST: db-postgres

@@ -2,6 +2,7 @@
 mod tests {
     use actix_web::middleware::ErrorHandlers;
     use actix_web::{http::header::ContentType, test, web, App};
+    use crate::internal::pkg::exceptions::error_message::FAIL_TO_LOAD_ENV;
     use crate::internal::pkg::middleware::{error::add_error_header, response::ApiResponse};
     use crate::internal::pkg::middleware::jwt::create_token;
     use crate::internal::server::{
@@ -46,7 +47,7 @@ mod tests {
             },
         ];
 
-        load_env(".env.local");
+        load_env(".env.local").expect(FAIL_TO_LOAD_ENV);
         let config = ServerConfig::from_env().unwrap();
 
         const CREATED_BY: i64 = 1844995683120058368;
@@ -125,7 +126,7 @@ mod tests {
         };
 
 
-        load_env(".env.local");
+        load_env(".env.local").expect(FAIL_TO_LOAD_ENV);
         let config = ServerConfig::from_env().unwrap();
 
         const CREATED_BY: i64 = 1844995683120058368;

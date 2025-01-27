@@ -6,10 +6,13 @@ use std::sync::Arc;
 use tokio_postgres::NoTls;
 
 mod internal;
-use internal::{
-    pkg::{middleware::{
-        error::add_error_header,
-    }, utils::snowflake::SnowflakeImpl},
+pub use internal::{
+    pkg::{
+        exceptions::error_message::FAIL_TO_LOAD_ENV,
+        middleware::{
+        error::add_error_header
+    },
+        utils::snowflake::SnowflakeImpl},
     server::{
         config::server::{load_env, ServerConfig},
         handlers::{
@@ -27,7 +30,7 @@ const ENV_FILE: &str = ".env.local";
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    load_env(ENV_FILE).expect("Failed to load environment variables.");
+    load_env(ENV_FILE).expect(FAIL_TO_LOAD_ENV);
     let config = ServerConfig::from_env()?;
 
     let pool = create_db_pool(&config)?;
