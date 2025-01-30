@@ -3,6 +3,18 @@ name = "myapp"
 version = "0.1.0"
 edition = "2021"
 
+[profile.dev] # โปรไฟล์ Debug (ค่าเริ่มต้น)
+opt-level = 0 # ไม่มีการปรับประสิทธิภาพ
+debug = true
+overflow-checks = true # ตรวจสอบการ overflow
+incremental = true # เปิดการคอมไพล์แบบเพิ่มทีละส่วน
+
+[profile.release] # โปรไฟล์ Release
+opt-level = 3 # เพิ่มประสิทธิภาพระดับสูงสุด
+debug = false
+overflow-checks = false # ปิดการตรวจสอบ overflow เพื่อเพิ่มความเร็ว
+lto = true # ใช้การ optimize ข้ามไฟล์ (Link Time Optimization)
+
 [[bin]]
 name = "myapp"
 path = "src/main.rs"
@@ -22,7 +34,7 @@ sonyflake = "0.3"
 serde_json = "1.0"
 env_logger = "0.11"
 log = "0.4"
-bcrypt = "0.16"
+bcrypt = "0.17"
 jsonwebtoken = "9.3"
 futures-util = "0.3"
 futures = "0.3"

@@ -1,4 +1,33 @@
-# Ignore environment and config files (if not needed in the container)
+/target
+**/*.rs.bk
+
+# Rust/Cargo
+**/Cargo.bk
+
+# IDE และ Editor
+.idea/
+*.swp
+*.swo
+*.log
+.vscode/
+*.iml
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ไฟล์อื่น ๆ
+*.tmp
+*.bak
+
+# env file
 .env
+.env.dev
 .env.local
-*.env
+.env.uat

@@ -11,7 +11,7 @@ x-postgres-env: &postgres-env
 
 services:
   db-postgres:
-    image: postgres:16.4
+    image: postgres:17.2
     restart: unless-stopped
     environment:
       <<: *postgres-env
