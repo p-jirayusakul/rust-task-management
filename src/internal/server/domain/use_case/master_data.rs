@@ -1,11 +1,11 @@
 use crate::internal::server::domain::entities::master_data::{
-    MasterDataTaskStatus,
-    MasterDataRole,
     MasterDataPriorityLevels,
+    MasterDataRole,
+    MasterDataTaskStatus,
 };
 
-use async_trait::async_trait;
 use crate::internal::pkg::exceptions::custom_error::CustomError;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait MasterDataUseCase: Send + Sync {

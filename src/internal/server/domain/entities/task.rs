@@ -22,7 +22,7 @@ pub struct TaskID {
     pub id: i64,
 }
 
-pub struct CreateTask {
+pub struct TaskCreateEntity {
     pub title: String,
     pub description: Option<String>,
     pub task_status_id: i64,

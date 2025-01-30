@@ -1,9 +1,7 @@
-use crate::internal::server::domain::use_case::health_check::HealthCheckUseCase;
-use crate::internal::pkg::middleware::response::{
-    response_success,
-};
-use actix_web::{ web, HttpResponse, Responder};
 use crate::internal::pkg::exceptions::custom_error::CustomError;
+use crate::internal::pkg::middleware::response::response_success;
+use crate::internal::server::domain::use_case::health_check::HealthCheckUseCase;
+use actix_web::{web, HttpResponse, Responder};
 
 pub struct HealthCheckHandler<T: HealthCheckUseCase + Send + Sync> {
     use_case: T,

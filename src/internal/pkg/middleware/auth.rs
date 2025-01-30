@@ -19,7 +19,7 @@ impl JwtMiddleware {
 // Middleware factory implementation (Transform)
 impl<S, B> Transform<S, ServiceRequest> for JwtMiddleware
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=Error>,
     S::Future: 'static,
     B: 'static,
 {
@@ -45,7 +45,7 @@ pub struct JwtMiddlewareService<S> {
 // Middleware service implementation
 impl<S, B> Service<ServiceRequest> for JwtMiddlewareService<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=Error>,
     S::Future: 'static,
     B: 'static,
 {

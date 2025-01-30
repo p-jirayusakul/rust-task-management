@@ -1,12 +1,12 @@
-use async_trait::async_trait;
+use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::server::domain::entities::master_data::{
-    MasterDataTaskStatus,
-    MasterDataRole,
     MasterDataPriorityLevels,
+    MasterDataRole,
+    MasterDataTaskStatus,
 };
 use crate::internal::server::domain::repositories::master_data::MasterDataRepositories;
 use crate::internal::server::domain::use_case::master_data::MasterDataUseCase;
-use crate::internal::pkg::exceptions::custom_error::CustomError;
+use async_trait::async_trait;
 
 pub struct MasterDataUseCaseImpl<T: MasterDataRepositories> {
     repository: T,

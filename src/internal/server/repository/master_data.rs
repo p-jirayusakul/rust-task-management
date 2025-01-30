@@ -1,4 +1,4 @@
-use crate::internal::pkg::exceptions::custom_error::{CustomError};
+use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::server::domain::entities::master_data::{
     MasterDataPriorityLevels,
     MasterDataRole,

@@ -1,4 +1,4 @@
-use crate::internal::pkg::exceptions::custom_error::{CustomError};
+use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::server::domain::repositories::health_check::HealthCheckRepositories;
 use async_trait::async_trait;
 use deadpool_postgres::{GenericClient, Pool};

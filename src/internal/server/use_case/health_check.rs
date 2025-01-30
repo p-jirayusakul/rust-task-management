@@ -1,7 +1,7 @@
-use async_trait::async_trait;
+use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::server::domain::repositories::health_check::HealthCheckRepositories;
 use crate::internal::server::domain::use_case::health_check::HealthCheckUseCase;
-use crate::internal::pkg::exceptions::custom_error::CustomError;
+use async_trait::async_trait;
 
 pub struct HealthCheckUseCaseImpl<T: HealthCheckRepositories> {
     repository: T,

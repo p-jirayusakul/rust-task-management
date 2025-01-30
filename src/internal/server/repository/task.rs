@@ -2,7 +2,7 @@ use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::pkg::exceptions::error_message::{RECORD_NOT_FOUND, TASK_NOT_FOUND};
 use crate::internal::pkg::utils::snowflake::Snowflake;
 use crate::internal::server::domain::entities::task::{
-    CreateTask, Task, UpdateTask, UpdateTaskPriorityLevels, UpdateTaskStatus,
+    Task, TaskCreateEntity, UpdateTask, UpdateTaskPriorityLevels, UpdateTaskStatus,
 };
 use crate::internal::server::domain::repositories::task::TaskRepositories;
 use async_trait::async_trait;
@@ -62,11 +62,11 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
                 &[&id],
             )
             .await.map_err(|e| {
-                if e.to_string().contains(RECORD_NOT_FOUND) {
-                        return CustomError::NotFound(format!("{}: {}", TASK_NOT_FOUND, id));
-                }
-                CustomError::RepositoryError(format!("Database query failed: {}", e))
-            })?;
+            if e.to_string().contains(RECORD_NOT_FOUND) {
+                return CustomError::NotFound(format!("{}: {}", TASK_NOT_FOUND, id));
+            }
+            CustomError::RepositoryError(format!("Database query failed: {}", e))
+        })?;
 
         let task = Task {
             id: row.get("id"),
@@ -82,7 +82,7 @@ impl<S: Snowflake + Send + Sync> TaskRepositories for TaskRepositoriesImpl<S> {
 
         Ok(task)
     }
-    async fn create_task(&self, task: CreateTask) -> Result<i64, CustomError> {
+    async fn create_task(&self, task: TaskCreateEntity) -> Result<i64, CustomError> {
         let client = self.db_conn.get().await.map_err(|e| {
             CustomError::RepositoryError(format!("Failed to get database connection: {}", e))
         })?;

@@ -1,9 +1,7 @@
-use crate::internal::server::domain::use_case::master_data::MasterDataUseCase;
-use crate::internal::pkg::middleware::response::{
-    response_success,
-};
-use actix_web::{ web, HttpResponse, Responder};
 use crate::internal::pkg::exceptions::custom_error::CustomError;
+use crate::internal::pkg::middleware::response::response_success;
+use crate::internal::server::domain::use_case::master_data::MasterDataUseCase;
+use actix_web::{web, HttpResponse, Responder};
 
 pub struct MasterDataHandler<T: MasterDataUseCase + Send + Sync> {
     use_case: T,

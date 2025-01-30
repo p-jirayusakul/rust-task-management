@@ -5,7 +5,6 @@ use actix_web::middleware::ErrorHandlerResponse;
 use log::error;
 
 pub fn add_error_header<B>(mut res: ServiceResponse<B>) -> actix_web::Result<ErrorHandlerResponse<B>> {
-
     res.response_mut().headers_mut().insert(
         header::CONTENT_TYPE,
         header::HeaderValue::from_static("application/json; charset=utf-8"),
@@ -13,7 +12,7 @@ pub fn add_error_header<B>(mut res: ServiceResponse<B>) -> actix_web::Result<Err
 
     let mut error_msg: String = match res.response().error() {
         Some(e) => format!("{}", e.to_string()),
-        None =>  String::from("Unknown Error")
+        None => String::from("Unknown Error")
     };
 
     if res.response().status().is_server_error() {

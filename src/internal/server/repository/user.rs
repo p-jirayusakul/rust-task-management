@@ -1,11 +1,11 @@
-use crate::internal::pkg::exceptions::custom_error::{CustomError};
+use crate::internal::pkg::exceptions::custom_error::CustomError;
 
+use crate::internal::pkg::exceptions::error_message::{RECORD_NOT_FOUND, USERNAME_NOT_FOUND};
+use crate::internal::server::domain::entities::user::User;
 use crate::internal::server::domain::repositories::user::UserRepositories;
 use async_trait::async_trait;
 use deadpool_postgres::Pool;
 use std::sync::Arc;
-use crate::internal::pkg::exceptions::error_message::{RECORD_NOT_FOUND, USERNAME_NOT_FOUND};
-use crate::internal::server::domain::entities::user::User;
 
 pub struct UserRepositoriesImpl {
     db_conn: Arc<Pool>,
@@ -19,7 +19,7 @@ impl UserRepositoriesImpl {
 
 #[async_trait]
 impl UserRepositories for UserRepositoriesImpl {
-    async fn user_exists(&self, username: &str) -> Result<User, CustomError>{
+    async fn user_exists(&self, username: &str) -> Result<User, CustomError> {
         let client = self.db_conn.get().await.map_err(|e| CustomError::RepositoryError(format!("Failed to get database connection: {}", e)))?;
 
         let row = client

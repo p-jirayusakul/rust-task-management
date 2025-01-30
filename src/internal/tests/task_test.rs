@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use actix_web::middleware::ErrorHandlers;
-    use actix_web::{http::header::ContentType, test, web, App};
     use crate::internal::pkg::exceptions::error_message::FAIL_TO_LOAD_ENV;
-    use crate::internal::pkg::middleware::{error::add_error_header, response::ApiResponse};
     use crate::internal::pkg::middleware::jwt::create_token;
+    use crate::internal::pkg::middleware::{error::add_error_header, response::ApiResponse};
+    use crate::internal::server::config::server::{load_env, ServerConfig};
     use crate::internal::server::{
         domain::{
             entities::task::{
@@ -14,14 +13,14 @@ mod tests {
             repositories::task::MockTaskRepositories,
         },
         handlers::task::{configure_routes, TaskHandler},
-        use_case::task::TaskUseCaseImpl,
         request::task::TaskRequest,
+        use_case::task::TaskUseCaseImpl,
     };
-    use crate::internal::server::config::server::{load_env, ServerConfig};
+    use actix_web::middleware::ErrorHandlers;
+    use actix_web::{http::header::ContentType, test, web, App};
 
     #[actix_web::test]
     async fn test_success_get_task() {
-
         let mock_data = vec![
             Task {
                 id: 548753961092383042,
@@ -117,7 +116,6 @@ mod tests {
 
     #[actix_web::test]
     async fn test_success_create_task() {
-
         let task = TaskRequest {
             title: "member".to_string(),
             description: None,
@@ -175,5 +173,4 @@ mod tests {
         assert_eq!(body.message, "Task created successfully");
         assert_eq!(body.data, mock_data);
     }
-
 }

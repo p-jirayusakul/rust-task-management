@@ -91,7 +91,6 @@ mod tests {
 
     #[actix_web::test]
     async fn test_inter_server_error_master_data_task_status() {
-
         let mut mock_repo = MockMasterDataRepositories::new();
         mock_repo
             .expect_list_task_status()

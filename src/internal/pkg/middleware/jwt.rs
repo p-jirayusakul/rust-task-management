@@ -1,7 +1,9 @@
-use jsonwebtoken::{encode, decode, Header, EncodingKey, DecodingKey, Validation, TokenData};
-use serde::{Deserialize, Serialize};
-use chrono::{Utc, Duration};
+use crate::internal::pkg::exceptions::custom_error::CustomError;
 use actix_web::error::Result;
+use actix_web::{HttpMessage, HttpRequest};
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
+use serde::{Deserialize, Serialize};
 
 // Struct ของ Claims
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,4 +35,11 @@ pub fn validate_token(token: &str, secret: &str) -> Result<TokenData<Claims>, js
         &DecodingKey::from_secret(secret.as_ref()),
         &Validation::default(),
     )
+}
+
+pub async fn extract_user_id(req: &HttpRequest) -> std::result::Result<i64, CustomError> {
+    req.extensions()
+        .get::<i64>()
+        .copied()
+        .ok_or(CustomError::SubNotfound)
 }

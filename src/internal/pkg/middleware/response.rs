@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Serialize,Deserialize, PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq)]
 pub struct ApiResponse<T> {
     pub status: String,
     pub message: String,
@@ -10,7 +10,7 @@ pub struct ApiResponse<T> {
 #[derive(Serialize, Deserialize, PartialEq)]
 pub struct ApiResponseErr {
     pub status: String,
-    pub message: String
+    pub message: String,
 }
 
 
@@ -25,6 +25,6 @@ pub fn response_success<T>(message: &str, data: T) -> ApiResponse<T> {
 pub fn response_error(message: &str) -> ApiResponseErr {
     ApiResponseErr {
         status: "error".to_string(),
-        message: message.to_string()
+        message: message.to_string(),
     }
 }

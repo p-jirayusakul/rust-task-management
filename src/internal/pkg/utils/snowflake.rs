@@ -1,5 +1,5 @@
-use sonyflake::Sonyflake;
 use mockall::automock;
+use sonyflake::Sonyflake;
 
 #[automock]
 pub trait Snowflake {

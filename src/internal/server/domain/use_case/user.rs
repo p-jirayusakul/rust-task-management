@@ -3,8 +3,8 @@ use crate::internal::server::domain::entities::user::{
     LoginToken,
 };
 
-use async_trait::async_trait;
 use crate::internal::pkg::exceptions::custom_error::CustomError;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait UserUseCase {

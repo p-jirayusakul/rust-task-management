@@ -1,11 +1,13 @@
 use crate::internal::pkg::exceptions::custom_error::CustomError;
 use crate::internal::pkg::middleware::auth::JwtMiddleware;
+use crate::internal::pkg::middleware::jwt::extract_user_id;
 use crate::internal::pkg::middleware::response::response_success;
-use crate::internal::server::domain::entities::task::{CreateTask as CreateTaskEntity, UpdateTask as UpdateTaskEntity, UpdateTaskPriorityLevels as UpdateTaskPriorityLevelsEntity, UpdateTaskStatus as UpdateTaskStatusEntity};
+use crate::internal::server::domain::entities::task::{TaskCreateEntity, UpdateTask as UpdateTaskEntity, UpdateTaskPriorityLevels as UpdateTaskPriorityLevelsEntity, UpdateTaskStatus as UpdateTaskStatusEntity};
 use crate::internal::server::domain::use_case::task::TaskUseCase;
 use crate::internal::server::request::task::{TaskRequest, UpdateTaskPriorityLevelsRequest, UpdateTaskStatusRequest};
-use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use validator::Validate;
+
 
 pub struct TaskHandler<T: TaskUseCase + Send + Sync> {
     use_case: T,
@@ -35,15 +37,15 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         handler: web::Data<TaskHandler<T>>,
         body: web::Json<TaskRequest>,
         req: HttpRequest,
-    ) ->  Result<impl Responder, CustomError> {
-        // sub จาก JWT ที่ถอดมาจาก middleware
-        let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
+    ) -> Result<impl Responder, CustomError> {
+        // user_id จาก JWT ที่ถอดมาจาก middleware
+        let user_id = extract_user_id(&req).await?;
 
         // validate body request
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
 
         // เตรียมข้อมูลส่งให้ layer use case
-        let new_task_entity = CreateTaskEntity {
+        let new_task_entity = TaskCreateEntity {
             title: body.title.clone(),
             description: body.description.clone(),
             task_status_id: body.task_status_id,
@@ -64,7 +66,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         path: web::Path<i64>,
         req: HttpRequest,
     ) -> Result<impl Responder, CustomError> {
-        let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
+        let user_id = extract_user_id(&req).await?;
         let task_id = path.into_inner();
 
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
@@ -90,7 +92,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         path: web::Path<i64>,
         req: HttpRequest,
     ) -> Result<impl Responder, CustomError> {
-        let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
+        let user_id = extract_user_id(&req).await?;
         let task_id = path.into_inner();
 
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
@@ -113,7 +115,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         path: web::Path<i64>,
         req: HttpRequest,
     ) -> Result<impl Responder, CustomError> {
-        let user_id = req.extensions().get::<i64>().copied().ok_or(CustomError::SubNotfound)?;
+        let user_id = extract_user_id(&req).await?;
         let task_id = path.into_inner();
 
         body.validate().map_err(|e| CustomError::ValidationError(e.to_string()))?;
@@ -138,7 +140,6 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
         }
     }
 }
-
 
 pub fn configure_routes<T: TaskUseCase + Send + Sync + 'static>(cfg: &mut web::ServiceConfig, jwt_secret: String) {
     cfg.service(

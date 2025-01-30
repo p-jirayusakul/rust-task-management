@@ -1,10 +1,10 @@
-use async_trait::async_trait;
-use crate::internal::server::domain::entities::master_data::{
-    MasterDataTaskStatus,
-    MasterDataRole,
-    MasterDataPriorityLevels,
-};
 use crate::internal::pkg::exceptions::custom_error::CustomError;
+use crate::internal::server::domain::entities::master_data::{
+    MasterDataPriorityLevels,
+    MasterDataRole,
+    MasterDataTaskStatus,
+};
+use async_trait::async_trait;
 use mockall::automock;
 
 #[automock]
