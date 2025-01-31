@@ -85,7 +85,7 @@ mod tests {
         let body: ApiResponse<Vec<MasterDataTaskStatus>> = serde_json::from_slice(&body_bytes).unwrap();
 
         assert_eq!(body.status, "success");
-        assert_eq!(body.message, "get list task status completed");
+        assert_eq!(body.message, "get list task status successfully");
         assert_eq!(body.data, mock_data);
     }
 

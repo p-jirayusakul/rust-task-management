@@ -110,7 +110,7 @@ mod tests {
         let body: ApiResponse<Vec<Task>> = serde_json::from_slice(&body_bytes).unwrap();
 
         assert_eq!(body.status, "success");
-        assert_eq!(body.message, "get task completed");
+        assert_eq!(body.message, "get task successfully");
         assert_eq!(body.data, mock_data);
     }
 
