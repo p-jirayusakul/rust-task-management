@@ -8,7 +8,6 @@ use crate::internal::server::request::task::{TaskRequest, UpdateTaskPriorityLeve
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use validator::Validate;
 
-
 pub struct TaskHandler<T: TaskUseCase + Send + Sync> {
     use_case: T,
 }
@@ -20,7 +19,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
 
     pub async fn list_task(handler: web::Data<TaskHandler<T>>) -> Result<impl Responder, CustomError> {
         match handler.use_case.list_task().await {
-            Ok(tasks) => Ok(HttpResponse::Ok().json(response_success("get task completed", tasks))),
+            Ok(tasks) => Ok(HttpResponse::Ok().json(response_success("get task successfully", tasks))),
             Err(e) => Err(e),
         }
     }
@@ -28,7 +27,7 @@ impl<T: TaskUseCase + Send + Sync> TaskHandler<T> {
     pub async fn get_task(handler: web::Data<TaskHandler<T>>, path: web::Path<i64>) -> Result<impl Responder, CustomError> {
         let task_id = path.into_inner();
         match handler.use_case.get_task(task_id).await {
-            Ok(task) => Ok(HttpResponse::Ok().json(response_success("get task completed", task))),
+            Ok(task) => Ok(HttpResponse::Ok().json(response_success("get task successfully", task))),
             Err(e) => Err(e),
         }
     }

@@ -17,7 +17,7 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
     ) -> Result<impl Responder, CustomError> {
         // เรีนยก use case และ return
         match handler.use_case.list_task_status().await {
-            Ok(items) => Ok(HttpResponse::Ok().json(response_success("get list task status completed", items))),
+            Ok(items) => Ok(HttpResponse::Ok().json(response_success("get list task status successfully", items))),
             Err(e) => Err(e)
         }
     }
@@ -26,7 +26,7 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
         handler: web::Data<MasterDataHandler<T>>,
     ) -> Result<impl Responder, CustomError> {
         match handler.use_case.list_role().await {
-            Ok(items) => Ok(HttpResponse::Ok().json(response_success("get list role completed", items))),
+            Ok(items) => Ok(HttpResponse::Ok().json(response_success("get list role successfully", items))),
             Err(e) => Err(e)
         }
     }
@@ -35,7 +35,7 @@ impl<T: MasterDataUseCase + Send + Sync> MasterDataHandler<T> {
         handler: web::Data<MasterDataHandler<T>>,
     ) -> Result<impl Responder, CustomError> {
         match handler.use_case.list_priority_levels().await {
-            Ok(items) => Ok(HttpResponse::Ok().json(response_success("get list priority levels completed", items))),
+            Ok(items) => Ok(HttpResponse::Ok().json(response_success("get list priority levels successfully", items))),
             Err(e) => Err(e)
         }
     }

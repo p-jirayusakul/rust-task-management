@@ -27,7 +27,7 @@ impl<T: UserUseCase + Send + Sync> UserHandler<T> {
         };
 
         match handler.use_case.login(payload).await {
-            Ok(token) => Ok(HttpResponse::Ok().json(response_success("login success", token))),
+            Ok(token) => Ok(HttpResponse::Ok().json(response_success("login successfully", token))),
             Err(e) => Err(e)
         }
     }
