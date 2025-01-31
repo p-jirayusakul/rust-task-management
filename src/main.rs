@@ -6,8 +6,6 @@ use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 use env_logger::Env;
 use sonyflake::Sonyflake;
 use std::sync::Arc;
-use std::time::Duration;
-use tokio::time::timeout;
 use tokio_postgres::NoTls;
 
 mod internal;
@@ -49,15 +47,16 @@ async fn main() -> std::io::Result<()> {
     load_env(ENV_FILE).expect(FAIL_TO_LOAD_ENV);
     let config = ServerConfig::from_env()?; // โหลด config จาก environment
 
+    // ===== Stage 1: Setup Handler =====
     // สร้าง connection pool สำหรับ database
-    let pool = create_db_pool(&config)?;
-    // สร้าง Sonyflake instance สำหรับการ generate unique ID
-    let sonyflake = initialize_sonyflake()?;
-    // ใช้ Sonyflake สำหรับสร้าง Snowflake node
-    let snowflake_node = SnowflakeImpl::new(sonyflake);
+    let max_size: usize = 16;
+    let pool = create_db_pool(&config, max_size)?;
+    let shutdown_pool = Arc::clone(&pool); // Clone Database Pool เพื่อใช้ใน Cleanup
 
-    // Clone Database Pool เพื่อใช้ใน Cleanup
-    let shutdown_pool = Arc::clone(&pool);
+    // สร้าง Sonyflake instance สำหรับการ generate unique ID
+    // ใช้ Sonyflake สำหรับสร้าง Snowflake node
+    let sonyflake = initialize_sonyflake()?;
+    let snowflake_node = SnowflakeImpl::new(sonyflake);
 
     // เตรียม data handler สำหรับแต่ละ endpoint
     let health_check_handler_data = create_health_check_handler_data(Arc::clone(&pool));
@@ -68,16 +67,18 @@ async fn main() -> std::io::Result<()> {
     // ตั้งค่า logging จาก environment
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
-    // สร้างและเริ่มการทำงานของ HTTP server
+    // ===== Stage 2: Run Server =====
     let server =
         HttpServer::new(move || {
             App::new()
                 // Middleware สำหรับ logging request ยกเว้น health-check
                 .wrap(
-                    Logger::default().exclude_regex(r"/(health-check/)"), // ลดการ logging ของ health-check
+                    Logger::default().exclude_regex(r"/health-check/"), // ลดการ logging ของ health-check
                 )
+
                 // Middleware สำหรับจัดการ error response
                 .wrap(ErrorHandlers::new().default_handler(add_error_header))
+
                 // กำหนด API
                 .service(
                     web::scope("/api/v1")
@@ -88,11 +89,13 @@ async fn main() -> std::io::Result<()> {
                                 HealthCheckUseCaseImpl<HealthCheckRepositoriesImpl>,
                             >(cfg)
                         })
+
                         // User routes
                         .app_data(user_handler_data.clone())
                         .configure(|cfg| {
                             configure_user_routes::<UserUseCaseImpl<UserRepositoriesImpl>>(cfg)
                         })
+
                         // Master Data routes
                         .app_data(master_data_handler_data.clone())
                         .configure(|cfg| {
@@ -100,6 +103,7 @@ async fn main() -> std::io::Result<()> {
                                 MasterDataUseCaseImpl<MasterDataRepositoriesImpl>,
                             >(cfg)
                         })
+
                         // Task Management routes
                         .app_data(task_handler_data.clone())
                         .configure(|cfg| {
@@ -110,11 +114,11 @@ async fn main() -> std::io::Result<()> {
                 )
         })
         .bind(("0.0.0.0", config.api_port))
-        .expect("Cannot bind to port 4000");
+        .expect(&format!("Cannot bind to port {}", config.api_port));
 
     let server = server.run();
 
-    // Graceful Shutdown: รอ SIGINT หรือ SIGTERM สัญญาณ
+    // ===== Stage 3: Wait signal CTRL+C =====
     tokio::select! {
         res = server => {
             if let Err(err) = res {
@@ -126,44 +130,43 @@ async fn main() -> std::io::Result<()> {
         }
     }
 
-    // เมื่อได้รับสัญญาณ Shutdown ให้ปิด Connection Pool
-    println!("Closing Database Connection Pool...");
-    let pool_close_future = async {
-        shutdown_pool.close();
-    };
-    if let Err(e) = timeout(Duration::from_secs(30), pool_close_future).await {
-        eprintln!("Timeout waiting for connection pool to close: {:?}", e);
-    } else {
-        println!("Database Connection Pool Closed!");
-    }
+    // ===== Stage 4: Close All connection e.g. database, redis .. =====
+    close_connection_db(shutdown_pool);
 
     println!("Shutdown completed.");
     Ok(())
 }
 
 // ฟังก์ชันสำหรับสร้าง Database Connection Pool
-fn create_db_pool(config: &ServerConfig) -> Result<Arc<Pool>, std::io::Error> {
+fn create_db_pool(config: &ServerConfig, max_size: usize) -> Result<Arc<Pool>, std::io::Error> {
     let mut db_cfg = tokio_postgres::Config::new();
     db_cfg
-        .dbname(&config.database_name) // ชื่อ database
-        .user(&config.database_user) // username
-        .password(&config.database_password) // password
-        .host(&config.database_host) // host
-        .port(config.database_port); // port
+        .dbname(&config.database_name)
+        .user(&config.database_user)
+        .password(&config.database_password)
+        .host(&config.database_host)
+        .port(config.database_port);
 
     // ตั้งค่าการรีไซเคิล connection pool
     let manager_config = ManagerConfig {
-        recycling_method: RecyclingMethod::Fast, // ใช้แบบรีไซเคิลอย่างรวดเร็ว
+        recycling_method: RecyclingMethod::Fast,
     };
     let manager = Manager::from_config(db_cfg, NoTls, manager_config);
     Ok(Arc::new(
-        Pool::builder(manager).max_size(16).build().map_err(|e| {
+        Pool::builder(manager).max_size(max_size).build().map_err(|e| {
             std::io::Error::new(
                 std::io::ErrorKind::Other,
                 format!("Failed to create database pool: {}", e),
             )
         })?,
     ))
+}
+
+fn close_connection_db(pool: Arc<Pool>) -> () {
+    pool.close();
+    if pool.is_closed() {
+        println!("Database connection pool closed successfully.");
+    }
 }
 
 // ฟังก์ชันสำหรับสร้าง Sonyflake Instance
@@ -181,9 +184,9 @@ fn initialize_sonyflake() -> Result<Sonyflake, std::io::Error> {
 fn create_health_check_handler_data(
     pool: Arc<Pool>,
 ) -> web::Data<HealthCheckHandler<HealthCheckUseCaseImpl<HealthCheckRepositoriesImpl>>> {
-    let health_check_repository = HealthCheckRepositoriesImpl::new(pool); // Repository สำหรับ health check
-    let health_check_use_case = HealthCheckUseCaseImpl::new(health_check_repository); // UseCase logic
-    let health_check_handler = HealthCheckHandler::new(health_check_use_case); // Handler
+    let health_check_repository = HealthCheckRepositoriesImpl::new(pool);
+    let health_check_use_case = HealthCheckUseCaseImpl::new(health_check_repository);
+    let health_check_handler = HealthCheckHandler::new(health_check_use_case);
     web::Data::new(health_check_handler)
 }
 
@@ -191,9 +194,9 @@ fn create_health_check_handler_data(
 fn create_master_data_handler_data(
     pool: Arc<Pool>,
 ) -> web::Data<MasterDataHandler<MasterDataUseCaseImpl<MasterDataRepositoriesImpl>>> {
-    let master_data_repository = MasterDataRepositoriesImpl::new(pool); // Repository สำหรับ master data
-    let master_data_use_case = MasterDataUseCaseImpl::new(master_data_repository); // UseCase logic
-    let master_data_handler = MasterDataHandler::new(master_data_use_case); // Handler
+    let master_data_repository = MasterDataRepositoriesImpl::new(pool);
+    let master_data_use_case = MasterDataUseCaseImpl::new(master_data_repository);
+    let master_data_handler = MasterDataHandler::new(master_data_use_case);
     web::Data::new(master_data_handler)
 }
 
@@ -202,9 +205,9 @@ fn create_task_handler_data(
     pool: Arc<Pool>,
     snowflake_node: SnowflakeImpl,
 ) -> web::Data<TaskHandler<TaskUseCaseImpl<TaskRepositoriesImpl<SnowflakeImpl>>>> {
-    let task_repository = TaskRepositoriesImpl::new(pool, snowflake_node); // Repository สำหรับ task
-    let task_use_case = TaskUseCaseImpl::new(task_repository); // UseCase logic
-    let task_handler = TaskHandler::new(task_use_case); // Handler
+    let task_repository = TaskRepositoriesImpl::new(pool, snowflake_node);
+    let task_use_case = TaskUseCaseImpl::new(task_repository);
+    let task_handler = TaskHandler::new(task_use_case);
     web::Data::new(task_handler)
 }
 
@@ -213,8 +216,8 @@ fn create_user_handler_data(
     pool: Arc<Pool>,
     config: &ServerConfig,
 ) -> web::Data<UserHandler<UserUseCaseImpl<UserRepositoriesImpl>>> {
-    let user_repository = UserRepositoriesImpl::new(pool); // Repository สำหรับ user
+    let user_repository = UserRepositoriesImpl::new(pool);
     let user_use_case = UserUseCaseImpl::new(user_repository, config.jwt_secret.clone()); // UseCase logic
-    let user_handler = UserHandler::new(user_use_case); // Handler
+    let user_handler = UserHandler::new(user_use_case);
     web::Data::new(user_handler)
 }
