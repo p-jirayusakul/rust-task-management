@@ -1,5 +1,5 @@
 # ===== Stage 1: Build =====
-FROM rust:1.84.0 as builder
+FROM rust:1.84.1 as builder
 
 # ตั้งค่า working directory
 WORKDIR /usr/src/myapp

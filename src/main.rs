@@ -1,41 +1,43 @@
-use actix_web::{
-    middleware::{ErrorHandlers, Logger},
-    web, App, HttpServer, Result,
-};
-use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
-use env_logger::Env;
-use sonyflake::Sonyflake;
 use std::sync::Arc;
-use tokio_postgres::NoTls;
+use actix_web::{web, App, HttpServer};
+use actix_web::middleware::{ErrorHandlers, Logger};
+use env_logger::Env;
 
-mod internal;
-pub use internal::{
-    pkg::{
-        exceptions::error_message::FAIL_TO_LOAD_ENV, // Custom error message
-        middleware::error::add_error_header,         // Middleware สำหรับจัดการ error header
-        utils::snowflake::SnowflakeImpl,             // สำหรับสร้าง unique ID
-    },
-    server::{
-        config::server::{load_env, ServerConfig}, // การโหลด config ของ server
-        handlers::{
-            health_check::{configure_routes as config_health_check_routes, HealthCheckHandler}, // Config routes สำหรับ master data
-            master_data::{configure_routes as configure_master_data_routes, MasterDataHandler}, // Config routes สำหรับ task
-            task::{configure_routes as configure_task_routes, TaskHandler}, // Config routes สำหรับ user
-            user::{configure_routes as configure_user_routes, UserHandler}, // Config routes สำหรับ health check
+mod domain;
+mod shared;
+mod infrastructure;
+mod application;
+
+use crate::application::use_cases::{
+    auth::AuthUseCaseImpl, health_check::HealthCheckUseCaseImpl,
+    master_data::MasterDataUseCaseImpl, task::TaskUseCaseImpl,
+};
+
+use crate::infrastructure::{
+    api::{
+        factories::{
+            auth::create_user_handler_data, health_check::create_health_check_handler_data,
+            master_data::create_master_data_handler_data, task::create_task_handler_data,
         },
-        repository::{
-            health_check::HealthCheckRepositoriesImpl, // Repository สำหรับ health check
-            master_data::MasterDataRepositoriesImpl,   // Repository สำหรับ master data
-            task::TaskRepositoriesImpl,                // Repository สำหรับ task
-            user::UserRepositoriesImpl,                // Repository สำหรับ user
-        },
-        use_case::{
-            health_check::HealthCheckUseCaseImpl, // Use case logic สำหรับ health check
-            master_data::MasterDataUseCaseImpl,   // Use case logic สำหรับ master data
-            task::TaskUseCaseImpl,                // Use case logic สำหรับ task
-            user::UserUseCaseImpl,                // Use case logic สำหรับ user
+        routes::{
+            auth::configure_user_routes, health_check::config_health_check_routes,
+            master_data_routes::configure_master_data_routes, task::configure_task_routes,
         },
     },
+    config::{load_env, ServerConfig},
+    database::{
+        auth::AuthRepositoriesImpl,
+        connection::{close_connection_db, create_db_pool},
+        health_check::HealthCheckRepositoriesImpl,
+        master_data::MasterDataRepositoriesImpl,
+        task::TaskRepositoriesImpl,
+    },
+};
+
+use crate::shared::{
+    exceptions::error_message::FAIL_TO_LOAD_ENV,
+    middleware::errors::add_error_header,
+    utils::snowflake::{initialize_sonyflake, SnowflakeImpl},
 };
 
 // ตั้งค่าที่อยู่ไฟล์ environment
@@ -93,7 +95,7 @@ async fn main() -> std::io::Result<()> {
                         // User routes
                         .app_data(user_handler_data.clone())
                         .configure(|cfg| {
-                            configure_user_routes::<UserUseCaseImpl<UserRepositoriesImpl>>(cfg)
+                            configure_user_routes::<AuthUseCaseImpl<AuthRepositoriesImpl>>(cfg)
                         })
 
                         // Master Data routes
@@ -113,8 +115,8 @@ async fn main() -> std::io::Result<()> {
                         }),
                 )
         })
-        .bind(("0.0.0.0", config.api_port))
-        .expect(&format!("Cannot bind to port {}", config.api_port));
+            .bind(("0.0.0.0", config.api_port))
+            .expect(&format!("Cannot bind to port {}", config.api_port));
 
     let server = server.run();
 
@@ -135,89 +137,4 @@ async fn main() -> std::io::Result<()> {
 
     println!("Shutdown completed.");
     Ok(())
-}
-
-// ฟังก์ชันสำหรับสร้าง Database Connection Pool
-fn create_db_pool(config: &ServerConfig, max_size: usize) -> Result<Arc<Pool>, std::io::Error> {
-    let mut db_cfg = tokio_postgres::Config::new();
-    db_cfg
-        .dbname(&config.database_name)
-        .user(&config.database_user)
-        .password(&config.database_password)
-        .host(&config.database_host)
-        .port(config.database_port);
-
-    // ตั้งค่าการรีไซเคิล connection pool
-    let manager_config = ManagerConfig {
-        recycling_method: RecyclingMethod::Fast,
-    };
-    let manager = Manager::from_config(db_cfg, NoTls, manager_config);
-    Ok(Arc::new(
-        Pool::builder(manager).max_size(max_size).build().map_err(|e| {
-            std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Failed to create database pool: {}", e),
-            )
-        })?,
-    ))
-}
-
-fn close_connection_db(pool: Arc<Pool>) -> () {
-    pool.close();
-    if pool.is_closed() {
-        println!("Database connection pool closed successfully.");
-    }
-}
-
-// ฟังก์ชันสำหรับสร้าง Sonyflake Instance
-fn initialize_sonyflake() -> Result<Sonyflake, std::io::Error> {
-    let sonyflake = Sonyflake::new().map_err(|e| {
-        std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Failed to initialize Sonyflake: {}", e),
-        )
-    })?;
-    Ok(sonyflake)
-}
-
-// ฟังก์ชันสำหรับสร้าง Health Check Data Handler
-fn create_health_check_handler_data(
-    pool: Arc<Pool>,
-) -> web::Data<HealthCheckHandler<HealthCheckUseCaseImpl<HealthCheckRepositoriesImpl>>> {
-    let health_check_repository = HealthCheckRepositoriesImpl::new(pool);
-    let health_check_use_case = HealthCheckUseCaseImpl::new(health_check_repository);
-    let health_check_handler = HealthCheckHandler::new(health_check_use_case);
-    web::Data::new(health_check_handler)
-}
-
-// ฟังก์ชันสำหรับสร้าง Master Data Handler
-fn create_master_data_handler_data(
-    pool: Arc<Pool>,
-) -> web::Data<MasterDataHandler<MasterDataUseCaseImpl<MasterDataRepositoriesImpl>>> {
-    let master_data_repository = MasterDataRepositoriesImpl::new(pool);
-    let master_data_use_case = MasterDataUseCaseImpl::new(master_data_repository);
-    let master_data_handler = MasterDataHandler::new(master_data_use_case);
-    web::Data::new(master_data_handler)
-}
-
-// ฟังก์ชันสำหรับสร้าง Task Handler
-fn create_task_handler_data(
-    pool: Arc<Pool>,
-    snowflake_node: SnowflakeImpl,
-) -> web::Data<TaskHandler<TaskUseCaseImpl<TaskRepositoriesImpl<SnowflakeImpl>>>> {
-    let task_repository = TaskRepositoriesImpl::new(pool, snowflake_node);
-    let task_use_case = TaskUseCaseImpl::new(task_repository);
-    let task_handler = TaskHandler::new(task_use_case);
-    web::Data::new(task_handler)
-}
-
-// ฟังก์ชันสำหรับสร้าง User Handler
-fn create_user_handler_data(
-    pool: Arc<Pool>,
-    config: &ServerConfig,
-) -> web::Data<UserHandler<UserUseCaseImpl<UserRepositoriesImpl>>> {
-    let user_repository = UserRepositoriesImpl::new(pool);
-    let user_use_case = UserUseCaseImpl::new(user_repository, config.jwt_secret.clone()); // UseCase logic
-    let user_handler = UserHandler::new(user_use_case);
-    web::Data::new(user_handler)
 }
