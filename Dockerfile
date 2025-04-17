@@ -1,5 +1,5 @@
 # ===== Stage 1: Build =====
-FROM rust:1.84.1 as builder
+FROM rust:1.86.0 as builder
 
 # ตั้งค่า working directory
 WORKDIR /usr/src/myapp
@@ -25,7 +25,12 @@ FROM debian:bookworm-slim
 # ติดตั้ง dependencies ที่จำเป็น (ถ้าแอปต้องการ dynamic libraries)
 RUN apt-get update && apt-get install -y \
     libssl-dev \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+# ตั้งค่าไทม์โซนให้เป็น Asia/Bangkok
+ENV TZ=Asia/Bangkok
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # ตั้งค่า working directory สำหรับ Production
 WORKDIR /usr/local/bin
